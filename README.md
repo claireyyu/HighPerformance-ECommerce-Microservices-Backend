@@ -67,23 +67,24 @@ e-commerce-platform/
 │   │   ├── Dockerfile
 │   │   └── go.mod
 │   ├── order-service/
-│   │   ├── src/
-│   │   ├── pom.xml
+│   │   ├── cmd/
+│   │   ├── internal/
+│   │   ├── Dockerfile
+│   │   └── go.mod
+│   ├── api-gateway/
+│   │   ├── config/
 │   │   └── Dockerfile
-├── api-gateway/
-│   ├── config/
-│   └── Dockerfile
-├── infrastructure/
-│   ├── kafka/
-│   └── database/
-├── performance-tests/
-│   ├── jmeter/
-│   ├── scripts/
-│   └── results/
-└── docs/
-    ├── architecture/
-    ├── api/
-    └── performance/
+│   ├── infrastructure/
+│   │   ├── kafka/
+│   │   └── database/
+│   ├── performance-tests/
+│   │   ├── jmeter/
+│   │   ├── scripts/
+│   │   └── results/
+│   └── docs/
+│       ├── architecture/
+│       ├── api/
+│       └── performance/
 ```
 
 ## Performance Testing
