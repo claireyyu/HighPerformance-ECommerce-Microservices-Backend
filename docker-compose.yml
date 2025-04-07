@@ -50,10 +50,4 @@ services:
       - zookeeper
 
 volumes:
-  mysql_data:
-  prometheus_data:
-  grafana_data:
-
-secrets:
-  db_password:
-    file: ./secrets/db_password.txt 
+  mysql_data: 
