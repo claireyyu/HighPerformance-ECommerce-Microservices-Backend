@@ -1,0 +1,61 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Java
+*.class
+*.jar
+*.war
+target/
+build/
+.gradle/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+log/
+
+# Build
+bin/
+dist/
+build/
+
+# Dependencies
+vendor/
+node_modules/
+
+# Docker
+.docker/
+
+# AWS
+.aws/
+aws.credentials
+
+# Test results
+performance-tests/results/*
+!performance-tests/results/.gitkeep
+
+# Database
+*.sqlite
+*.db
+
+# OS
+.DS_Store
+Thumbs.db 
