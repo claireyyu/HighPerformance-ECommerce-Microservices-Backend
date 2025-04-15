@@ -47,5 +47,25 @@ services:
       - kafka
       - zookeeper
 
+  product-service:
+    build:
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - PRODUCT_SERVICE_PORT=8081
+      - PRODUCT_SERVICE_HOST=0.0.0.0
+      - PRODUCT_DB_HOST=mysql
+      - PRODUCT_DB_PORT=3306
+      - PRODUCT_DB_USER=${MYSQL_USER}
+      - PRODUCT_DB_PASSWORD=${MYSQL_PASSWORD}
+      - PRODUCT_DB_NAME=${PRODUCT_DB_NAME}
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_PRODUCT_TOPIC=product-events
+    depends_on:
+      - mysql
+      - kafka
+
 volumes:
   mysql_data: 
