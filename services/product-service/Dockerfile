@@ -2,6 +2,9 @@ FROM golang:1.21-alpine
 
 WORKDIR /app
 
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
 COPY go.mod go.sum ./
 RUN go mod download
 

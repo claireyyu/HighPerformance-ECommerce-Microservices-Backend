@@ -22,6 +22,14 @@ type ServiceConfig struct {
 func LoadConfig() (*Config, error) {
 	viper.AutomaticEnv()
 
+	// Set default values
+	viper.SetDefault("API_GATEWAY_PORT", "8080")
+	viper.SetDefault("API_GATEWAY_HOST", "0.0.0.0")
+	viper.SetDefault("PRODUCT_SERVICE_HOST", "product-service")
+	viper.SetDefault("PRODUCT_SERVICE_PORT", "8081")
+	viper.SetDefault("ORDER_SERVICE_HOST", "order-service")
+	viper.SetDefault("ORDER_SERVICE_PORT", "8082")
+
 	config := &Config{
 		Server: ServerConfig{
 			Port: viper.GetString("API_GATEWAY_PORT"),

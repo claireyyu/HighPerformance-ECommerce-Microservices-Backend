@@ -15,8 +15,12 @@ services:
       - ORDER_SERVICE_HOST=order-service
       - ORDER_SERVICE_PORT=8082
     depends_on:
-      - product-service
-      - order-service
+      product-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+    networks:
+      - app-network
 
   product-service:
     build:
@@ -35,8 +39,16 @@ services:
       - KAFKA_BROKERS=kafka:9092
       - KAFKA_PRODUCT_TOPIC=product-events
     depends_on:
-      - mysql
-      - kafka
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   order-service:
     build:
@@ -57,9 +69,18 @@ services:
       - KAFKA_PRODUCT_TOPIC=product-events
       - PRODUCT_SERVICE_URL=http://product-service:8081
     depends_on:
-      - mysql
-      - kafka
-      - product-service
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   mysql:
     image: mysql:8.0
@@ -74,10 +95,11 @@ services:
     volumes:
       - ./infrastructure/database/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -89,11 +111,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 15s
 
   kafka:
     image: confluentinc/cp-kafka:latest
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - "9092:9092"
     environment:
@@ -106,6 +130,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 15s
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -116,8 +141,10 @@ services:
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
       - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
     depends_on:
-      - kafka
-      - zookeeper
+      kafka:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
 
   influxdb:
     image: influxdb:1.8
@@ -128,6 +155,12 @@ services:
       - INFLUXDB_HTTP_AUTH_ENABLED=false
     volumes:
       - influxdb-data:/var/lib/influxdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   grafana:
     image: grafana/grafana:latest
@@ -139,8 +172,19 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
     depends_on:
-      - influxdb
+      influxdb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   influxdb-data:
-  grafana-data: 
+  grafana-data:
+
+networks:
+  app-network:
+    driver: bridge 

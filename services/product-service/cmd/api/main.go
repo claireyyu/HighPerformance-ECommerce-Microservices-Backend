@@ -42,6 +42,27 @@ func main() {
 	// Initialize router
 	router := gin.Default()
 
+	// Health check endpoint with database check
+	router.GET("/health", func(c *gin.Context) {
+		// Try to list products to check database connectivity
+		_, err := repo.List()
+		if err != nil {
+			c.JSON(500, gin.H{
+				"status": "error",
+				"error":  "Database connection failed: " + err.Error(),
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"status": "ok",
+			"checks": gin.H{
+				"database": "ok",
+				"server":   "ok",
+			},
+		})
+	})
+
 	// Routes
 	router.POST("/products", handler.CreateProduct)
 	router.GET("/products/:id", handler.GetProduct)
