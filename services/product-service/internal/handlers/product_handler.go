@@ -86,7 +86,12 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 }
 
 func (h *ProductHandler) ListProducts(c *gin.Context) {
-	products, err := h.service.ListProducts()
+	name := c.Query("name")
+	category := c.Query("category")
+	minPrice := c.Query("min_price")
+	maxPrice := c.Query("max_price")
+
+	products, err := h.service.ListProducts(name, category, minPrice, maxPrice)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

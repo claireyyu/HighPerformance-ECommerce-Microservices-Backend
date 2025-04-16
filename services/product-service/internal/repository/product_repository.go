@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/ecommerce-platform/product-service/internal/config"
 	"github.com/ecommerce-platform/product-service/internal/models"
 	"gorm.io/driver/mysql"
@@ -51,5 +54,27 @@ func (r *ProductRepository) Delete(id uint) error {
 func (r *ProductRepository) List() ([]models.Product, error) {
 	var products []models.Product
 	err := r.db.Find(&products).Error
+	return products, err
+}
+
+func (r *ProductRepository) Filter(name, category, minPrice, maxPrice string) ([]models.Product, error) {
+	var products []models.Product
+	query := r.db
+	fmt.Println("Search name:", name)
+
+	if name != "" {
+		query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(name)+"%")
+	}
+	if category != "" {
+		query = query.Where("category = ?", category)
+	}
+	if minPrice != "" {
+		query = query.Where("price >= ?", minPrice)
+	}
+	if maxPrice != "" {
+		query = query.Where("price <= ?", maxPrice)
+	}
+
+	err := query.Find(&products).Error
 	return products, err
 }

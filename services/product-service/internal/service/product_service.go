@@ -77,8 +77,8 @@ func (s *ProductService) DeleteProduct(id uint) error {
 	return s.publishEvent(event)
 }
 
-func (s *ProductService) ListProducts() ([]models.Product, error) {
-	return s.repo.List()
+func (s *ProductService) ListProducts(name, category, minPrice, maxPrice string) ([]models.Product, error) {
+	return s.repo.Filter(name, category, minPrice, maxPrice)
 }
 
 func (s *ProductService) publishEvent(event models.ProductEvent) error {
