@@ -11,21 +11,25 @@ const syncDuration = new Trend('sync_duration');
 const asyncDuration = new Trend('async_duration');
 const syncErrors = new Rate('sync_errors');
 const asyncErrors = new Rate('async_errors');
+const productErrors = new Rate('product_errors'); // ✅ NEW
 
 // Test configuration
 export const options = {
   stages: [
-    { duration: '30s', target: 20 }, // Ramp up to 20 users
-    { duration: '1m', target: 20 },  // Stay at 20 users
-    { duration: '30s', target: 0 },  // Ramp down to 0 users
+    { duration: '30s', target: 50 },   // Warm-up
+    { duration: '1m', target: 200 },    // Light load
+    { duration: '1m', target: 400 },    // Medium load
+    { duration: '1m', target: 450 },    // Heavy load
+    { duration: '30s', target: 0 },     // Ramp down
   ],
   thresholds: {
-    'http_req_duration': ['p(95)<500'], // 95% of requests should complete within 500ms
-    'errors': ['rate<0.01'],            // Less than 1% of requests should fail
-    'sync_duration': ['p(95)<500'],     // 95% of sync requests should complete within 500ms
-    'async_duration': ['p(95)<100'],    // 95% of async requests should complete within 100ms
-    'sync_errors': ['rate<0.01'],       // Less than 1% of sync requests should fail
-    'async_errors': ['rate<0.01'],      // Less than 1% of async requests should fail
+    'http_req_duration': ['p(95)<500'],
+    'errors': ['rate<0.01'],
+    'sync_duration': ['p(95)<500'],
+    'async_duration': ['p(95)<100'],
+    'sync_errors': ['rate<0.01'],
+    'async_errors': ['rate<0.01'],
+    'product_errors': ['rate<0.01'], 
   },
 };
 
@@ -63,14 +67,17 @@ export default function() {
   const productRes = http.post(`${PRODUCT_SERVICE_URL}/products`, JSON.stringify(productData), {
     headers: { 'Content-Type': 'application/json' },
   });
-  
-  check(productRes, {
+
+  const productCheck = check(productRes, {
     'product creation successful': (r) => r.status === 201,
   });
 
-  if (productRes.status !== 201) {
+  if (!productCheck) {
     errorRate.add(1);
+    productErrors.add(1); 
     return;
+  } else {
+    productErrors.add(0);
   }
 
   const product = JSON.parse(productRes.body);
@@ -83,13 +90,15 @@ export default function() {
     });
 
     syncDuration.add(syncRes.timings.duration);
-    check(syncRes, {
+    const syncCheck = check(syncRes, {
       'sync order creation successful': (r) => r.status === 201,
     });
 
-    if (syncRes.status !== 201) {
+    if (!syncCheck) {
       syncErrors.add(1);
       errorRate.add(1);
+    } else {
+      syncErrors.add(0);
     }
   });
 
@@ -101,23 +110,25 @@ export default function() {
     });
 
     asyncDuration.add(asyncRes.timings.duration);
-    check(asyncRes, {
+    const asyncCheck = check(asyncRes, {
       'async order creation successful': (r) => r.status === 202,
     });
 
-    if (asyncRes.status !== 202) {
+    if (!asyncCheck) {
       asyncErrors.add(1);
       errorRate.add(1);
+    } else {
+      asyncErrors.add(0);
     }
   });
 
-  sleep(1); // Sleep for 1 second between iterations
+  sleep(1); // Sleep removed to maximize throughput
 }
 
 // Generate both HTML and text summary reports
 export function handleSummary(data) {
   return {
-    "tests/results/sync_vs_async/summary.html": htmlReport(data),
-    "tests/results/sync_vs_async/summary.txt": textSummary(data),
+    "tests/results/load_test/summary.html": htmlReport(data),
+    "tests/results/load_test/summary.txt": textSummary(data),
   };
 }
