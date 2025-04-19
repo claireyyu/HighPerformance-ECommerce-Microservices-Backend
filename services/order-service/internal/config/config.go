@@ -8,6 +8,7 @@ type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
 	Kafka    KafkaConfig    `mapstructure:"kafka"`
+	RabbitMQ RabbitMQConfig `mapstructure:"rabbitmq"`
 }
 
 type ServerConfig struct {
@@ -24,7 +25,13 @@ type DatabaseConfig struct {
 }
 
 type KafkaConfig struct {
-	Broker string `mapstructure:"broker"`
+	Brokers []string `mapstructure:"brokers"`
+	Topic   string   `mapstructure:"topic"`
+}
+
+type RabbitMQConfig struct {
+	URL   string `mapstructure:"url"`
+	Queue string `mapstructure:"queue"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -41,7 +48,10 @@ func LoadConfig() (*Config, error) {
 	viper.BindEnv("database.user", "ORDER_DB_USER")
 	viper.BindEnv("database.password", "ORDER_DB_PASSWORD")
 	viper.BindEnv("database.dbname", "ORDER_DB_NAME")
-	viper.BindEnv("kafka.broker", "KAFKA_BROKERS")
+	viper.BindEnv("kafka.brokers", "KAFKA_BROKERS")
+	viper.BindEnv("kafka.topic", "KAFKA_ORDER_TOPIC")
+	viper.BindEnv("rabbitmq.url", "RABBITMQ_URL")
+	viper.BindEnv("rabbitmq.queue", "RABBITMQ_QUEUE")
 
 	// Set default values
 	viper.SetDefault("server.port", 8082)
@@ -51,7 +61,10 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("database.user", "order_user")
 	viper.SetDefault("database.password", "order_password")
 	viper.SetDefault("database.dbname", "order_db")
-	viper.SetDefault("kafka.broker", "kafka:9092")
+	viper.SetDefault("kafka.brokers", "kafka:9092")
+	viper.SetDefault("kafka.topic", "order_topic")
+	viper.SetDefault("rabbitmq.url", "amqp://guest:guest@rabbitmq:5672/")
+	viper.SetDefault("rabbitmq.queue", "order_queue")
 
 	// Read environment variables
 	viper.AutomaticEnv()
