@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/ecommerce-platform/order-service/internal/config"
+	"github.com/ecommerce-platform/order-service/internal/messaging/kafka"
+	"github.com/ecommerce-platform/order-service/internal/messaging/rabbitmq"
 	"github.com/ecommerce-platform/order-service/internal/models"
 	"github.com/ecommerce-platform/order-service/internal/repository"
 	"github.com/gin-gonic/gin"
@@ -28,6 +30,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize repository: %v", err)
 	}
+
+	// Initialize Kafka and RabbitMQ producers
+	kafkaProducer := kafka.NewKafkaProducer(cfg.Kafka)
+	rabbitProducer := rabbitmq.NewRabbitMQProducer(cfg.RabbitMQ)
 
 	// Initialize router
 	router := gin.Default()
@@ -66,21 +72,29 @@ func main() {
 		}
 
 		order.Status = models.OrderStatusPending
+		queueType := c.Query("queue")
 
-		// Process order asynchronously
-		go func() {
-			ctx := context.Background()
-			if err := orderRepo.Create(ctx, &order); err != nil {
-				log.Printf("Failed to create async order: %v", err)
-				return
-			}
-			log.Printf("Async order created successfully: %d", order.ID)
-		}()
+		var sendErr error
 
-		// Return immediately with 202 Accepted
+		switch queueType {
+		case "kafka":
+			sendErr = kafkaProducer.ProduceOrderCreated(&order)
+		case "rabbitmq":
+			sendErr = rabbitProducer.ProduceOrderCreated(&order)
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid or missing queue type"})
+			return
+		}
+
+		if sendErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish order to queue: " + sendErr.Error()})
+			return
+		}
+
 		c.JSON(http.StatusAccepted, gin.H{
-			"message": "Order is being processed",
+			"message": "Order has been queued for processing",
 			"status":  "accepted",
+			"queue":   queueType,
 		})
 	})
 
