@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Create results directory if it doesn't exist
-mkdir -p results
+mkdir -p tests/results/sync_vs_async
 
 # Ensure services are running
 echo "Ensuring all services are up..."
@@ -16,6 +16,6 @@ echo "Running sync vs async comparison test..."
 k6 run tests/sync_vs_async_test.js
 
 # Print the location of the results
-echo "Test results are available in:"
-echo "- results/sync_vs_async_summary.html"
-echo "- results/sync_vs_async_summary.txt" 
+echo "Sync vs Async results are available in:"
+echo "- tests/results/sync_vs_async/summary.html"
+echo "- tests/results/sync_vs_async/summary.txt"
