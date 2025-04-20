@@ -1,12 +1,17 @@
-FROM golang:1.21-alpine AS builder
+FROM golang:1.21-alpine
 
 WORKDIR /app
-COPY . .
+
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
+COPY go.mod go.sum ./
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/product-service ./cmd/product-service
 
-FROM alpine:latest
-WORKDIR /app
-COPY --from=builder /app/product-service .
+COPY . .
+
+RUN go build -o main ./cmd/api
+
 EXPOSE 8081
-CMD ["./product-service"] 
+
+CMD ["./main"] 

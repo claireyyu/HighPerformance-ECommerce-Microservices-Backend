@@ -1,0 +1,33 @@
+[32m     ✓ product creation successful[0m
+
+     █ Synchronous Order Creation
+
+[32m       ✓ sync order creation successful[0m
+
+     █ Asynchronous Order Creation
+
+[32m       ✓ async order creation successful[0m
+
+   [32m✓[0m async_duration[2m.................:[0m avg=[36m0.73056[0m  min=[36m0.231[0m    med=[36m0.626[0m  max=[36m6.454[0m    p(90)=[36m1.0543[0m  p(95)=[36m1.35265[0m
+   [32m✓[0m async_errors[2m...................:[0m [36m0.00%[0m   [36;2m✓ 0[0m         [36;2m✗ 0[0m   
+     checks[2m.........................:[0m [36m100.00%[0m [36;2m✓ 5370[0m      [36;2m✗ 0[0m   
+     data_received[2m..................:[0m [36m1.6 MB[0m  [36;2m13 kB/s[0m
+     data_sent[2m......................:[0m [36m1.2 MB[0m  [36;2m10 kB/s[0m
+   [32m✓[0m errors[2m.........................:[0m [36m0.00%[0m   [36;2m✓ 0[0m         [36;2m✗ 0[0m   
+     group_duration[2m.................:[0m avg=[36m4.31ms[0m   min=[36m275.66µs[0m med=[36m2.71ms[0m max=[36m51.8ms[0m   p(90)=[36m10.01ms[0m p(95)=[36m11.44ms[0m
+     http_req_blocked[2m...............:[0m avg=[36m12.34µs[0m  min=[36m0s[0m       med=[36m4µs[0m    max=[36m4.13ms[0m   p(90)=[36m11µs[0m    p(95)=[36m20µs[0m   
+     http_req_connecting[2m............:[0m avg=[36m4.56µs[0m   min=[36m0s[0m       med=[36m0s[0m     max=[36m3.94ms[0m   p(90)=[36m0s[0m      p(95)=[36m0s[0m     
+   [32m✓[0m http_req_duration[2m..............:[0m avg=[36m6.9ms[0m    min=[36m231µs[0m    med=[36m6.46ms[0m max=[36m143.97ms[0m p(90)=[36m14.93ms[0m p(95)=[36m16.87ms[0m
+       { expected_response:true }[2m...:[0m avg=[36m6.9ms[0m    min=[36m231µs[0m    med=[36m6.46ms[0m max=[36m143.97ms[0m p(90)=[36m14.93ms[0m p(95)=[36m16.87ms[0m
+     http_req_failed[2m................:[0m [36m0.00%[0m   [36;2m✓ 0[0m         [36;2m✗ 5370[0m
+     http_req_receiving[2m.............:[0m avg=[36m53.04µs[0m  min=[36m5µs[0m      med=[36m32µs[0m   max=[36m3.51ms[0m   p(90)=[36m92µs[0m    p(95)=[36m137µs[0m  
+     http_req_sending[2m...............:[0m avg=[36m32.72µs[0m  min=[36m2µs[0m      med=[36m18µs[0m   max=[36m5.59ms[0m   p(90)=[36m46µs[0m    p(95)=[36m83µs[0m   
+     http_req_tls_handshaking[2m.......:[0m avg=[36m0s[0m       min=[36m0s[0m       med=[36m0s[0m     max=[36m0s[0m       p(90)=[36m0s[0m      p(95)=[36m0s[0m     
+     http_req_waiting[2m...............:[0m avg=[36m6.82ms[0m   min=[36m199µs[0m    med=[36m6.38ms[0m max=[36m143.77ms[0m p(90)=[36m14.83ms[0m p(95)=[36m16.77ms[0m
+     http_reqs[2m......................:[0m [36m5370[0m    [36;2m44.474874/s[0m
+     iteration_duration[2m.............:[0m avg=[36m1.02s[0m    min=[36m1s[0m       med=[36m1.02s[0m  max=[36m1.18s[0m    p(90)=[36m1.03s[0m   p(95)=[36m1.03s[0m  
+     iterations[2m.....................:[0m [36m1790[0m    [36;2m14.824958/s[0m
+   [32m✓[0m sync_duration[2m..................:[0m avg=[36m7.586864[0m min=[36m1.99[0m     med=[36m7.383[0m  max=[36m51.618[0m   p(90)=[36m11.2942[0m p(95)=[36m12.6045[0m
+   [32m✓[0m sync_errors[2m....................:[0m [36m0.00%[0m   [36;2m✓ 0[0m         [36;2m✗ 0[0m   
+     vus[2m............................:[0m [36m1[0m       [36;2mmin=1[0m       [36;2mmax=20[0m
+     vus_max[2m........................:[0m [36m20[0m      [36;2mmin=20[0m      [36;2mmax=20[0m
