@@ -77,10 +77,6 @@ e-commerce-platform/
 │   ├── infrastructure/
 │   │   ├── kafka/
 │   │   └── database/
-│   ├── performance-tests/
-│   │   ├── jmeter/
-│   │   ├── scripts/
-│   │   └── results/
 │   └── docs/
 │       ├── architecture/
 │       ├── api/
