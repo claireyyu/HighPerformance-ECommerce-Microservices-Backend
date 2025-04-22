@@ -1,144 +1,33 @@
-version: '3.8'
-
 services:
-  api-gateway:
-    build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    environment:
-      - API_GATEWAY_PORT=8080
-      - API_GATEWAY_HOST=0.0.0.0
-      - PRODUCT_SERVICE_HOST=product-service
-      - PRODUCT_SERVICE_PORT=8081
-      - ORDER_SERVICE_HOST=order-service
-      - ORDER_SERVICE_PORT=8082
-    depends_on:
-      product-service:
-        condition: service_started
-      order-service:
-        condition: service_started
-    networks:
-      - app-network
-
-  product-service:
-    build:
-      context: ./services/product-service
-      dockerfile: Dockerfile
-    ports:
-      - "8081:8081"
-    environment:
-      - PRODUCT_SERVICE_PORT=8081
-      - PRODUCT_SERVICE_HOST=0.0.0.0
-      - PRODUCT_DB_HOST=mysql
-      - PRODUCT_DB_PORT=3306
-      - PRODUCT_DB_USER=product_user
-      - PRODUCT_DB_PASSWORD=product_password
-      - PRODUCT_DB_NAME=product_db
-      - KAFKA_BROKERS=kafka:9092
-      - KAFKA_PRODUCT_TOPIC=product-events
-    depends_on:
-      mysql:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  order-service:
-    build:
-      context: ./services/order-service
-      dockerfile: Dockerfile
-    ports:
-      - "8082:8082"
-    working_dir: /app
-    environment:
-      - ORDER_SERVICE_PORT=8082
-      - ORDER_SERVICE_HOST=0.0.0.0
-      - ORDER_DB_HOST=mysql
-      - ORDER_DB_PORT=3306
-      - ORDER_DB_USER=order_user
-      - ORDER_DB_PASSWORD=order_password
-      - ORDER_DB_NAME=order_db
-      - KAFKA_BROKERS=kafka:9092
-      - KAFKA_ORDER_TOPIC=order-events
-      - KAFKA_PRODUCT_TOPIC=product-events
-      - PRODUCT_SERVICE_URL=http://product-service:8081
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
-      - RABBITMQ_QUEUE=orders
-    depends_on:
-      mysql:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      product-service:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  order-consumer:
-    build:
-      context: ./services/order-service
-      dockerfile: Dockerfile
-    command: ./order-consumer
-    working_dir: /app
-    environment:
-      - ORDER_DB_HOST=mysql
-      - ORDER_DB_PORT=3306
-      - ORDER_DB_USER=order_user
-      - ORDER_DB_PASSWORD=order_password
-      - ORDER_DB_NAME=order_db
-      - KAFKA_BROKERS=kafka:9092
-      - KAFKA_ORDER_TOPIC=order-events
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
-      - RABBITMQ_QUEUE=orders
-    depends_on:
-      kafka:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      mysql:
-        condition: service_healthy
-
+  # MySQL Database
   mysql:
     image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: ecommerce
     ports:
       - "3306:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - MYSQL_DATABASE=product_db
-      - MYSQL_USER=product_user
-      - MYSQL_PASSWORD=product_password
-      - MYSQL_MULTIPLE_DATABASES=product_db,order_db
     volumes:
-      - ./infrastructure/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
 
+  # Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      test: ["CMD-SHELL", "echo srvr | nc localhost 2181 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -150,83 +39,116 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+      KAFKA_LOG_RETENTION_BYTES: -1
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    ports:
-      - "8083:8080"
-    environment:
-      - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
-      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
-    depends_on:
-      kafka:
-        condition: service_healthy
-      zookeeper:
-        condition: service_healthy
-
+  # RabbitMQ
   rabbitmq:
     image: rabbitmq:3-management
     ports:
-      - "5672:5672"   # AMQP protocol
-      - "15672:15672" # Web UI
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      test: ["CMD", "rabbitmqctl", "status"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
 
-  influxdb:
-    image: influxdb:1.8
+  # API Gateway
+  api:
+    build: .
+    command: ./main -service api
     ports:
-      - "8086:8086"
-    environment:
-      - INFLUXDB_DB=k6
-      - INFLUXDB_HTTP_AUTH_ENABLED=false
-    volumes:
-      - influxdb-data:/var/lib/influxdb
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-    volumes:
-      - grafana-data:/var/lib/grafana
+      - "8080:8080"
     depends_on:
-      influxdb:
+      product:
+        condition: service_started
+      order:
+        condition: service_started
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=ecommerce
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_TOPIC=orders
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - PRODUCT_SERVICE_URL=http://product:8081
+      - ORDER_SERVICE_URL=http://order:8082
+
+  # Product Service
+  product:
+    build: .
+    command: ./main -service product
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=ecommerce
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_TOPIC=orders
+
+  # Order Service
+  order:
+    build: .
+    command: ./main -service order
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=ecommerce
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_TOPIC=orders
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
 
 volumes:
-  influxdb-data:
-  grafana-data:
-
-networks:
-  app-network:
-    driver: bridge 
+  mysql_data: 

@@ -1,0 +1,28 @@
+# Database Configuration
+db:
+  host: mysql
+  port: 3306
+  user: root
+  password: password
+  name: ecommerce
+
+# Kafka Configuration
+kafka:
+  brokers: kafka:29092
+  topic: orders
+
+# RabbitMQ Configuration
+rabbitmq:
+  host: rabbitmq
+  port: 5672
+  user: guest
+  password: guest
+
+# Service Configuration
+services:
+  api:
+    port: 8080
+  product:
+    port: 8081
+  order:
+    port: 8082 
