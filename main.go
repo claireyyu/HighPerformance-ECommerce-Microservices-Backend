@@ -13,24 +13,24 @@ import (
 )
 
 func main() {
-	// Load configuration
-	if err := config.LoadConfig(); err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
-	}
-
 	// Parse command line flags
-	serviceName := flag.String("service", "", "Service to run (api, product, order)")
+	serviceName := flag.String("service", "", "Service to run (product, order)")
 	flag.Parse()
 
 	if *serviceName == "" {
-		log.Fatal("Service name is required. Use -service flag (api, product, order)")
+		log.Fatal("Service name is required. Use -service flag (product, order)")
+	}
+
+	// Load configuration for services that need it
+	if *serviceName == "product" || *serviceName == "order" {
+		if err := config.LoadConfig(); err != nil {
+			log.Fatalf("Failed to load configuration: %v", err)
+		}
 	}
 
 	// Start the appropriate service
 	var err error
 	switch *serviceName {
-	case "api":
-		err = services.StartAPIGateway()
 	case "product":
 		err = services.StartProductService()
 	case "order":

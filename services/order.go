@@ -72,7 +72,7 @@ func StartOrderService() error {
 			// Get all orders
 			rows, err := db.Query("SELECT id, user_id, product_id, quantity, status, created_at FROM orders")
 			if err != nil {
-				http.Error(w, "Failed to get orders", http.StatusInternalServerError)
+				http.Error(w, fmt.Sprintf("Failed to get orders: %v", err), http.StatusInternalServerError)
 				return
 			}
 			defer rows.Close()
@@ -80,10 +80,18 @@ func StartOrderService() error {
 			var orders []Order
 			for rows.Next() {
 				var o Order
-				if err := rows.Scan(&o.ID, &o.UserID, &o.ProductID, &o.Quantity, &o.Status, &o.CreatedAt); err != nil {
-					http.Error(w, "Failed to scan order", http.StatusInternalServerError)
+				var createdAt string
+				if err := rows.Scan(&o.ID, &o.UserID, &o.ProductID, &o.Quantity, &o.Status, &createdAt); err != nil {
+					http.Error(w, fmt.Sprintf("Failed to scan order: %v", err), http.StatusInternalServerError)
 					return
 				}
+				// Parse the timestamp
+				t, err := time.Parse("2006-01-02 15:04:05", createdAt)
+				if err != nil {
+					http.Error(w, fmt.Sprintf("Failed to parse timestamp: %v", err), http.StatusInternalServerError)
+					return
+				}
+				o.CreatedAt = t
 				orders = append(orders, o)
 			}
 
@@ -199,7 +207,11 @@ func StartOrderService() error {
 	})
 
 	// Start server
-	port := ":8082"
+	port := os.Getenv("ORDER_SERVICE_PORT")
+	if port == "" {
+		port = "8081" // Default port if environment variable is not set
+	}
+	port = ":" + port
 	log.Printf("Order Service starting on port %s", port)
 	return http.ListenAndServe(port, nil)
 }

@@ -113,7 +113,11 @@ func StartProductService() error {
 	})
 
 	// Start server
-	port := ":8081"
+	port := os.Getenv("PRODUCT_SERVICE_PORT")
+	if port == "" {
+		port = "8080" // Default port if environment variable is not set
+	}
+	port = ":" + port
 	log.Printf("Product Service starting on port %s", port)
 	return http.ListenAndServe(port, nil)
 }

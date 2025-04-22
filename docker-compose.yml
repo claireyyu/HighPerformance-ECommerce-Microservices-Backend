@@ -72,40 +72,12 @@ services:
       timeout: 5s
       retries: 5
 
-  # API Gateway
-  api:
-    build: .
-    command: ./main -service api
-    ports:
-      - "8080:8080"
-    depends_on:
-      product:
-        condition: service_started
-      order:
-        condition: service_started
-    volumes:
-      - ./config.yaml:/app/config.yaml
-    environment:
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASSWORD=password
-      - DB_NAME=ecommerce
-      - KAFKA_BROKERS=kafka:29092
-      - KAFKA_TOPIC=orders
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASSWORD=guest
-      - PRODUCT_SERVICE_URL=http://product:8081
-      - ORDER_SERVICE_URL=http://order:8082
-
   # Product Service
   product:
     build: .
     command: ./main -service product
     ports:
-      - "8081:8081"
+      - "8080:8080"
     depends_on:
       mysql:
         condition: service_healthy
@@ -121,13 +93,14 @@ services:
       - DB_NAME=ecommerce
       - KAFKA_BROKERS=kafka:29092
       - KAFKA_TOPIC=orders
+      - PRODUCT_SERVICE_PORT=8080
 
   # Order Service
   order:
     build: .
     command: ./main -service order
     ports:
-      - "8082:8082"
+      - "8081:8081"
     depends_on:
       mysql:
         condition: service_healthy
@@ -149,6 +122,7 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
+      - ORDER_SERVICE_PORT=8081
 
 volumes:
   mysql_data: 

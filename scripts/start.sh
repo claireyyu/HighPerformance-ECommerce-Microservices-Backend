@@ -80,9 +80,8 @@ fi
 cd ..
 
 echo "Services are ready!"
-echo "API Gateway: http://localhost:8080"
-echo "Product Service: http://localhost:8081"
-echo "Order Service: http://localhost:8082"
+echo "Product Service: http://localhost:8080"
+echo "Order Service: http://localhost:8081"
 echo "RabbitMQ Management: http://localhost:15672"
 echo "Kafka: localhost:9092"
 echo "MySQL: localhost:3306"

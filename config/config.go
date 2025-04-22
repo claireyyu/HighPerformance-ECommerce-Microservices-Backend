@@ -29,9 +29,6 @@ type Config struct {
 	} `yaml:"rabbitmq"`
 
 	Services struct {
-		API struct {
-			Port int `yaml:"port"`
-		} `yaml:"api"`
 		Product struct {
 			Port int `yaml:"port"`
 		} `yaml:"product"`
@@ -71,6 +68,10 @@ func LoadConfig() error {
 	os.Setenv("RABBITMQ_PORT", fmt.Sprintf("%d", cfg.RabbitMQ.Port))
 	os.Setenv("RABBITMQ_USER", cfg.RabbitMQ.User)
 	os.Setenv("RABBITMQ_PASSWORD", cfg.RabbitMQ.Password)
+
+	// Set service port environment variables
+	os.Setenv("PRODUCT_SERVICE_PORT", fmt.Sprintf("%d", cfg.Services.Product.Port))
+	os.Setenv("ORDER_SERVICE_PORT", fmt.Sprintf("%d", cfg.Services.Order.Port))
 
 	return nil
 }
