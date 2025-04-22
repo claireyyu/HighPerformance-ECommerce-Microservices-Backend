@@ -1,5 +1,6 @@
+version: "3.9"
+
 services:
-  # MySQL Database
   mysql:
     image: mysql:8.0
     environment:
@@ -15,7 +16,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     environment:
@@ -45,19 +45,12 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_DELETE_TOPIC_ENABLE: "true"
-      KAFKA_LOG_RETENTION_HOURS: 24
-      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
-      KAFKA_LOG_RETENTION_BYTES: -1
-      KAFKA_LOG_SEGMENT_BYTES: 1073741824
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # RabbitMQ
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -72,35 +65,24 @@ services:
       timeout: 5s
       retries: 5
 
-  # Product Service
   product:
     build: .
     command: ./main -service product
     ports:
-      - "8080:8080"
+      - "${PRODUCT_SERVICE_PORT}:${PRODUCT_SERVICE_PORT}"
     depends_on:
       mysql:
         condition: service_healthy
       kafka:
         condition: service_healthy
-    volumes:
-      - ./config.yaml:/app/config.yaml
-    environment:
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASSWORD=password
-      - DB_NAME=ecommerce
-      - KAFKA_BROKERS=kafka:29092
-      - KAFKA_TOPIC=orders
-      - PRODUCT_SERVICE_PORT=8080
+    env_file:
+      - .env
 
-  # Order Service
   order:
     build: .
     command: ./main -service order
     ports:
-      - "8081:8081"
+      - "${ORDER_SERVICE_PORT}:${ORDER_SERVICE_PORT}"
     depends_on:
       mysql:
         condition: service_healthy
@@ -108,21 +90,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    volumes:
-      - ./config.yaml:/app/config.yaml
-    environment:
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASSWORD=password
-      - DB_NAME=ecommerce
-      - KAFKA_BROKERS=kafka:29092
-      - KAFKA_TOPIC=orders
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASSWORD=guest
-      - ORDER_SERVICE_PORT=8081
+    env_file:
+      - .env
 
 volumes:
-  mysql_data: 
+  mysql_data:

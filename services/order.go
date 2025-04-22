@@ -13,7 +13,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// Order represents an order in the system
 type Order struct {
 	ID        int       `json:"id"`
 	UserID    int       `json:"user_id"`
@@ -23,195 +22,160 @@ type Order struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// StartOrderService starts the Order Service
 func StartOrderService() error {
-	// Connect to MySQL
-	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASSWORD")
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-	dbName := os.Getenv("DB_NAME")
-
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPass, dbHost, dbPort, dbName)
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return fmt.Errorf("failed to connect to database: %v", err)
-	}
-	defer db.Close()
-
-	// Test database connection
-	if err := db.Ping(); err != nil {
-		return fmt.Errorf("failed to ping database: %v", err)
-	}
-
-	// Initialize Kafka producer
+	// Kafka + RabbitMQ config
 	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
 	kafkaTopic := os.Getenv("KAFKA_TOPIC")
+	rabbitURL := fmt.Sprintf(
+		"amqp://%s:%s@%s:%s/",
+		os.Getenv("RABBITMQ_USER"),
+		os.Getenv("RABBITMQ_PASSWORD"),
+		os.Getenv("RABBITMQ_HOST"),
+		os.Getenv("RABBITMQ_PORT"),
+	)
+
+	// Kafka producer
 	kafkaProducer, err := queues.NewKafkaProducer(kafkaBrokers)
 	if err != nil {
 		return fmt.Errorf("failed to create Kafka producer: %v", err)
 	}
 	defer kafkaProducer.Close()
 
-	// Initialize RabbitMQ client
-	rabbitmqURL := fmt.Sprintf("amqp://%s:%s@%s:%s/%%2F",
-		os.Getenv("RABBITMQ_USER"),
-		os.Getenv("RABBITMQ_PASSWORD"),
-		os.Getenv("RABBITMQ_HOST"),
-		os.Getenv("RABBITMQ_PORT"),
-	)
-	rabbitmqClient := queues.NewRabbitMQClient(rabbitmqURL)
-	if err := rabbitmqClient.Connect(); err != nil {
-		return fmt.Errorf("failed to create RabbitMQ client: %v", err)
+	// RabbitMQ client
+	rabbit := queues.NewRabbitMQClient(rabbitURL)
+	if err := rabbit.Connect(); err != nil {
+		return fmt.Errorf("failed to connect to RabbitMQ: %v", err)
 	}
-	defer rabbitmqClient.Close()
+	defer rabbit.Close()
 
-	// Set up routes
-	http.HandleFunc("/orders", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			// Get all orders
-			rows, err := db.Query("SELECT id, user_id, product_id, quantity, status, created_at FROM orders")
-			if err != nil {
-				http.Error(w, fmt.Sprintf("Failed to get orders: %v", err), http.StatusInternalServerError)
-				return
-			}
-			defer rows.Close()
+	// MySQL database
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_NAME"),
+	)
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return fmt.Errorf("failed to connect to MySQL: %v", err)
+	}
+	defer db.Close()
 
-			var orders []Order
-			for rows.Next() {
-				var o Order
-				var createdAt string
-				if err := rows.Scan(&o.ID, &o.UserID, &o.ProductID, &o.Quantity, &o.Status, &createdAt); err != nil {
-					http.Error(w, fmt.Sprintf("Failed to scan order: %v", err), http.StatusInternalServerError)
-					return
-				}
-				// Parse the timestamp
-				t, err := time.Parse("2006-01-02 15:04:05", createdAt)
-				if err != nil {
-					http.Error(w, fmt.Sprintf("Failed to parse timestamp: %v", err), http.StatusInternalServerError)
-					return
-				}
-				o.CreatedAt = t
-				orders = append(orders, o)
-			}
+	if err := db.Ping(); err != nil {
+		return fmt.Errorf("failed to ping MySQL: %v", err)
+	}
 
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(orders)
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS orders (
+		id INT AUTO_INCREMENT PRIMARY KEY,
+		user_id INT NOT NULL,
+		product_id INT NOT NULL,
+		quantity INT NOT NULL,
+		status VARCHAR(32),
+		created_at DATETIME
+	)`)
+	if err != nil {
+		return fmt.Errorf("failed to create orders table: %v", err)
+	}
+
+	// 👇 消费消息后写入数据库
+	consumeAndInsert := func(raw string) {
+		log.Printf("[Consuming] %s", raw)
+
+		var payload struct {
+			Type  string `json:"type"`
+			Order Order  `json:"order"`
 		}
-	})
-
-	// Synchronous order creation
-	http.HandleFunc("/orders/sync", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+			log.Printf("❌ JSON Unmarshal error: %v", err)
 			return
 		}
 
-		var o Order
-		if err := json.NewDecoder(r.Body).Decode(&o); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
-		}
-
-		// Set default values
-		o.Status = "pending"
-		o.CreatedAt = time.Now()
-
-		result, err := db.Exec(
+		o := payload.Order
+		_, err := db.Exec(
 			"INSERT INTO orders (user_id, product_id, quantity, status, created_at) VALUES (?, ?, ?, ?, ?)",
 			o.UserID, o.ProductID, o.Quantity, o.Status, o.CreatedAt,
 		)
 		if err != nil {
-			http.Error(w, "Failed to create order", http.StatusInternalServerError)
+			log.Printf("❌ Error inserting order: %v", err)
 			return
 		}
+		log.Printf("✅ Successfully inserted order: user_id=%d product_id=%d", o.UserID, o.ProductID)
+	}
 
-		id, _ := result.LastInsertId()
-		o.ID = int(id)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(o)
-	})
-
-	// Asynchronous order creation with Kafka
+	// ✉️ HTTP - Kafka 异步发送
 	http.HandleFunc("/orders/async/kafka", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
 		var o Order
 		if err := json.NewDecoder(r.Body).Decode(&o); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			http.Error(w, "Invalid request", http.StatusBadRequest)
 			return
 		}
-
-		// Set default values
 		o.Status = "pending"
 		o.CreatedAt = time.Now()
 
-		// Publish order created event to Kafka
 		event := map[string]interface{}{
 			"type":  "order_created",
 			"order": o,
 		}
 		eventJSON, _ := json.Marshal(event)
+
 		if err := kafkaProducer.PublishToKafka(kafkaTopic, string(eventJSON)); err != nil {
-			http.Error(w, "Failed to publish to Kafka", http.StatusInternalServerError)
+			http.Error(w, "Failed to send to Kafka", http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusAccepted)
 		json.NewEncoder(w).Encode(map[string]string{
-			"message": "Order creation request accepted and queued in Kafka",
-			"order":   string(eventJSON),
+			"message": "Order sent to Kafka",
 		})
 	})
 
-	// Asynchronous order creation with RabbitMQ
+	// ✉️ HTTP - RabbitMQ 异步发送
 	http.HandleFunc("/orders/async/rabbitmq", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
 		var o Order
 		if err := json.NewDecoder(r.Body).Decode(&o); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			http.Error(w, "Invalid request", http.StatusBadRequest)
 			return
 		}
-
-		// Set default values
 		o.Status = "pending"
 		o.CreatedAt = time.Now()
 
-		// Publish order created event to RabbitMQ
 		event := map[string]interface{}{
 			"type":  "order_created",
 			"order": o,
 		}
 		eventJSON, _ := json.Marshal(event)
-		if err := rabbitmqClient.PublishToRabbitMQ("orders", string(eventJSON)); err != nil {
-			http.Error(w, "Failed to publish to RabbitMQ", http.StatusInternalServerError)
+
+		if err := rabbit.Publish("orders", string(eventJSON)); err != nil {
+			http.Error(w, "Failed to send to RabbitMQ", http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusAccepted)
 		json.NewEncoder(w).Encode(map[string]string{
-			"message": "Order creation request accepted and queued in RabbitMQ",
-			"order":   string(eventJSON),
+			"message": "Order sent to RabbitMQ",
 		})
 	})
 
-	// Start server
+	// 🧠 启动消费者监听
+	go queues.StartKafkaConsumer([]string{kafkaBrokers}, kafkaTopic, consumeAndInsert)
+	go rabbit.Consume("orders", consumeAndInsert)
+
+	// 🧩 启动 HTTP 服务
 	port := os.Getenv("ORDER_SERVICE_PORT")
 	if port == "" {
-		port = "8081" // Default port if environment variable is not set
+		port = "8081"
 	}
-	port = ":" + port
-	log.Printf("Order Service starting on port %s", port)
-	return http.ListenAndServe(port, nil)
+	log.Printf("Order Service running on port %s", port)
+	return http.ListenAndServe(":"+port, nil)
 }

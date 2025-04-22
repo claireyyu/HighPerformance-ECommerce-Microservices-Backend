@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/claireyu/ecommerce/config"
 	"github.com/claireyu/ecommerce/services"
 )
 
@@ -19,13 +18,6 @@ func main() {
 
 	if *serviceName == "" {
 		log.Fatal("Service name is required. Use -service flag (product, order)")
-	}
-
-	// Load configuration for services that need it
-	if *serviceName == "product" || *serviceName == "order" {
-		if err := config.LoadConfig(); err != nil {
-			log.Fatalf("Failed to load configuration: %v", err)
-		}
 	}
 
 	// Start the appropriate service

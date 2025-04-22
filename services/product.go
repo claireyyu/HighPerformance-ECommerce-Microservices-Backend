@@ -12,7 +12,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// Product represents a product in the system
 type Product struct {
 	ID          int     `json:"id"`
 	Name        string  `json:"name"`
@@ -20,41 +19,48 @@ type Product struct {
 	Price       float64 `json:"price"`
 }
 
-// StartProductService starts the Product Service
 func StartProductService() error {
 	// Connect to MySQL
-	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASSWORD")
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-	dbName := os.Getenv("DB_NAME")
-
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPass, dbHost, dbPort, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_NAME"),
+	)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %v", err)
 	}
 	defer db.Close()
 
-	// Test database connection
 	if err := db.Ping(); err != nil {
 		return fmt.Errorf("failed to ping database: %v", err)
 	}
 
-	// Initialize Kafka producer
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS products (
+		id INT AUTO_INCREMENT PRIMARY KEY,
+		name VARCHAR(255) NOT NULL,
+		description TEXT,
+		price DOUBLE
+	)`)
+	if err != nil {
+		return fmt.Errorf("failed to create products table: %v", err)
+	}
+
+	// Connect to Kafka
 	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
-	kafkaTopic := "product-events"
-	kafkaProducer, err := queues.NewKafkaProducer(kafkaBrokers)
+	kafkaTopic := os.Getenv("KAFKA_TOPIC")
+	producer, err := queues.NewKafkaProducer(kafkaBrokers)
 	if err != nil {
 		return fmt.Errorf("failed to create Kafka producer: %v", err)
 	}
-	defer kafkaProducer.Close()
+	defer producer.Close()
 
-	// Set up routes
+	// Setup HTTP routes
 	http.HandleFunc("/products", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
-			// Get all products
 			rows, err := db.Query("SELECT id, name, description, price FROM products")
 			if err != nil {
 				http.Error(w, "Failed to get products", http.StatusInternalServerError)
@@ -76,7 +82,6 @@ func StartProductService() error {
 			json.NewEncoder(w).Encode(products)
 
 		case "POST":
-			// Create new product
 			var p Product
 			if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 				http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -93,14 +98,16 @@ func StartProductService() error {
 			id, _ := result.LastInsertId()
 			p.ID = int(id)
 
-			// Publish product created event to Kafka
+			// Create event & publish
 			event := map[string]interface{}{
 				"type":    "product_created",
 				"product": p,
 			}
 			eventJSON, _ := json.Marshal(event)
-			if err := kafkaProducer.PublishToKafka(kafkaTopic, string(eventJSON)); err != nil {
-				log.Printf("Failed to publish to Kafka: %v", err)
+			if err := producer.PublishToKafka(kafkaTopic, string(eventJSON)); err != nil {
+				log.Printf("[ERROR] Failed to publish to Kafka: %v", err)
+			} else if os.Getenv("DEBUG") == "true" {
+				log.Printf("[Kafka] Sent: %s", eventJSON)
 			}
 
 			w.Header().Set("Content-Type", "application/json")
@@ -115,9 +122,8 @@ func StartProductService() error {
 	// Start server
 	port := os.Getenv("PRODUCT_SERVICE_PORT")
 	if port == "" {
-		port = "8080" // Default port if environment variable is not set
+		port = "8080"
 	}
-	port = ":" + port
-	log.Printf("Product Service starting on port %s", port)
-	return http.ListenAndServe(port, nil)
+	log.Printf("[INFO] Product service running on port %s", port)
+	return http.ListenAndServe(":"+port, nil)
 }
