@@ -19,9 +19,6 @@ services:
       - PRODUCT_DB_NAME=product_db
       - KAFKA_BROKERS=54.202.170.47:9092
       - KAFKA_PRODUCT_TOPIC=product-events
-    depends_on:
-      mysql:
-        condition: service_healthy
 
   order-service:
     build:
@@ -43,8 +40,6 @@ services:
       - RABBITMQ_URL=amqp://guest:guest@54.202.170.47:5672/
       - RABBITMQ_QUEUE=orders
     depends_on:
-      mysql:
-        condition: service_healthy
       product-service:
         condition: service_healthy
 
@@ -64,8 +59,6 @@ services:
       - RABBITMQ_URL=amqp://guest:guest@54.202.170.47:5672/
       - RABBITMQ_QUEUE=orders
     depends_on:
-      mysql:
-        condition: service_healthy
 
   api-gateway:
     build:
