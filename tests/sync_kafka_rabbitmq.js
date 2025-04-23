@@ -225,7 +225,7 @@ export function kafkaTest() {
   const startTime = Date.now();
   
   // Get group from execution context tags
-  const group = __ENV.SCENARIO ? __ENV.SCENARIO.match(/sync_group(\d+)/)[1] : '1';
+  const group = __ENV.SCENARIO ? __ENV.SCENARIO.match(/kafka_group(\d+)/)[1] : '1';
   
   const res = http.post(endpoints.kafka, JSON.stringify(payload), {
     headers: { 'Content-Type': 'application/json' }
@@ -257,7 +257,7 @@ export function rabbitmqTest() {
   const startTime = Date.now();
   
   // Get group from execution context tags
-  const group = __ENV.SCENARIO ? __ENV.SCENARIO.match(/sync_group(\d+)/)[1] : '1';
+  const group = __ENV.SCENARIO ? __ENV.SCENARIO.match(/rabbitmq_group(\d+)/)[1] : '1';
 
   const res = http.post(endpoints.rabbitmq, JSON.stringify(payload), {
     headers: { 'Content-Type': 'application/json' }
