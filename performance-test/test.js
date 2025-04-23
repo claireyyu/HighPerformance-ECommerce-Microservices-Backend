@@ -3,6 +3,7 @@ const axios = require('axios');
 const fs = require('fs');
 const { performance } = require('perf_hooks');
 
+// 需要修改以匹配端点
 const endpoints = {
   sync: 'http://localhost:8081/orders/sync',
   kafka: 'http://localhost:8081/orders/async/kafka',

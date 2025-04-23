@@ -96,26 +96,4 @@ wheels/
 .installed.cfg
 *.egg
 
-# Python Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
-.coverage.*
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-pytestdebug.log
-
-# Python Virtual Environment
-venv/
-ENV/
-env/
-.env/
-.venv/
-env.bak/
-venv.bak/ 
+node_modules/
