@@ -39,7 +39,7 @@ export const options = {
       duration: '30s',
       exec: 'syncTest',
       startTime: '0s',
-      tags: { endpoint: 'sync', group: 1 }
+      tags: { endpoint: 'sync', group: '1' }
     },
     kafka_group1: {
       executor: 'constant-vus',
@@ -47,7 +47,7 @@ export const options = {
       duration: '30s',
       exec: 'kafkaTest',
       startTime: '30s',
-      tags: { endpoint: 'kafka', group: 1 }
+      tags: { endpoint: 'kafka', group: '1' }
     },
     rabbitmq_group1: {
       executor: 'constant-vus',
@@ -55,7 +55,7 @@ export const options = {
       duration: '30s',
       exec: 'rabbitmqTest',
       startTime: '1m',
-      tags: { endpoint: 'rabbitmq', group: 1 }
+      tags: { endpoint: 'rabbitmq', group: '1' }
     },
 
     // Group 2: 4 thread groups (200 VUs)
@@ -65,7 +65,7 @@ export const options = {
       duration: '30s',
       exec: 'syncTest',
       startTime: '1m30s',
-      tags: { endpoint: 'sync', group: 2 }
+      tags: { endpoint: 'sync', group: '2' }
     },
     kafka_group2: {
       executor: 'constant-vus',
@@ -73,7 +73,7 @@ export const options = {
       duration: '30s',
       exec: 'kafkaTest',
       startTime: '2m',
-      tags: { endpoint: 'kafka', group: 2 }
+      tags: { endpoint: 'kafka', group: '2' }
     },
     rabbitmq_group2: {
       executor: 'constant-vus',
@@ -81,7 +81,7 @@ export const options = {
       duration: '30s',
       exec: 'rabbitmqTest',
       startTime: '2m30s',
-      tags: { endpoint: 'rabbitmq', group: 2 }
+      tags: { endpoint: 'rabbitmq', group: '2' }
     },
 
     // Group 3: 6 thread groups (300 VUs)
@@ -91,7 +91,7 @@ export const options = {
       duration: '30s',
       exec: 'syncTest',
       startTime: '3m',
-      tags: { endpoint: 'sync', group: 3 }
+      tags: { endpoint: 'sync', group: '3' }
     },
     kafka_group3: {
       executor: 'constant-vus',
@@ -99,7 +99,7 @@ export const options = {
       duration: '30s',
       exec: 'kafkaTest',
       startTime: '3m30s',
-      tags: { endpoint: 'kafka', group: 3 }
+      tags: { endpoint: 'kafka', group: '3' }
     },
     rabbitmq_group3: {
       executor: 'constant-vus',
@@ -107,7 +107,7 @@ export const options = {
       duration: '30s',
       exec: 'rabbitmqTest',
       startTime: '4m',
-      tags: { endpoint: 'rabbitmq', group: 3 }
+      tags: { endpoint: 'rabbitmq', group: '3' }
     },
   },
   thresholds: {
@@ -193,7 +193,7 @@ export function syncTest() {
   const startTime = Date.now();
   
   // Get group from execution context tags
-  const group = __ENV.SCENARIO ? parseInt(__ENV.SCENARIO.match(/sync_group(\d+)/)[1]) : 1;
+  const group = __ENV.SCENARIO ? __ENV.SCENARIO.match(/sync_group(\d+)/)[1] : '1';
   
   const res = http.post(endpoints.sync, JSON.stringify(payload), {
     headers: { 'Content-Type': 'application/json' }
@@ -225,7 +225,7 @@ export function kafkaTest() {
   const startTime = Date.now();
   
   // Get group from execution context tags
-  const group = __ENV.SCENARIO ? parseInt(__ENV.SCENARIO.match(/kafka_group(\d+)/)[1]) : 1;
+  const group = __ENV.SCENARIO ? __ENV.SCENARIO.match(/sync_group(\d+)/)[1] : '1';
   
   const res = http.post(endpoints.kafka, JSON.stringify(payload), {
     headers: { 'Content-Type': 'application/json' }
@@ -257,8 +257,8 @@ export function rabbitmqTest() {
   const startTime = Date.now();
   
   // Get group from execution context tags
-  const group = __ENV.SCENARIO ? parseInt(__ENV.SCENARIO.match(/rabbitmq_group(\d+)/)[1]) : 1;
-  
+  const group = __ENV.SCENARIO ? __ENV.SCENARIO.match(/sync_group(\d+)/)[1] : '1';
+
   const res = http.post(endpoints.rabbitmq, JSON.stringify(payload), {
     headers: { 'Content-Type': 'application/json' }
   });
