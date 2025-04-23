@@ -103,6 +103,35 @@ func StartOrderService() error {
 		log.Printf("✅ Successfully inserted order: user_id=%d product_id=%d", o.UserID, o.ProductID)
 	}
 
+	http.HandleFunc("/orders/sync", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var o Order
+		if err := json.NewDecoder(r.Body).Decode(&o); err != nil {
+			http.Error(w, "Invalid request", http.StatusBadRequest)
+			return
+		}
+		o.Status = "pending"
+		o.CreatedAt = time.Now()
+
+		_, err := db.Exec(
+			"INSERT INTO orders (user_id, product_id, quantity, status, created_at) VALUES (?, ?, ?, ?, ?)",
+			o.UserID, o.ProductID, o.Quantity, o.Status, o.CreatedAt,
+		)
+		if err != nil {
+			http.Error(w, "Failed to insert into DB", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "Order inserted into DB (sync)",
+		})
+	})
+
 	// ✉️ HTTP - Kafka 异步发送
 	http.HandleFunc("/orders/async/kafka", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {

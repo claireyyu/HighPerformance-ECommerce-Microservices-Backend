@@ -1,0 +1,67 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Load Test Visualization</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h2>Performance Results</h2>
+  <canvas id="throughputChart" width="800" height="400"></canvas>
+  <canvas id="latencyChart" width="800" height="400"></canvas>
+  <script>
+    fetch('/results.json')
+      .then(res => res.json())
+      .then(data => {
+        const endpoints = [...new Set(data.map(d => d.endpoint))];
+        const threadGroups = [...new Set(data.map(d => d.groups))];
+
+        const ctx1 = document.getElementById('throughputChart').getContext('2d');
+        const ctx2 = document.getElementById('latencyChart').getContext('2d');
+
+        const datasets1 = endpoints.map(endpoint => ({
+          label: `${endpoint} - throughput`,
+          data: data.filter(d => d.endpoint === endpoint).map(d => d.throughput),
+          borderWidth: 2,
+          fill: false
+        }));
+
+        const datasets2 = endpoints.map(endpoint => ({
+          label: `${endpoint} - latency`,
+          data: data.filter(d => d.endpoint === endpoint).map(d => d.avgLatency),
+          borderWidth: 2,
+          fill: false
+        }));
+
+        new Chart(ctx1, {
+          type: 'line',
+          data: {
+            labels: threadGroups,
+            datasets: datasets1
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: { display: true, text: 'Throughput vs Thread Groups' }
+            }
+          }
+        });
+
+        new Chart(ctx2, {
+          type: 'line',
+          data: {
+            labels: threadGroups,
+            datasets: datasets2
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: { display: true, text: 'Average Latency vs Thread Groups' }
+            }
+          }
+        });
+      });
+  </script>
+</body>
+</html>
