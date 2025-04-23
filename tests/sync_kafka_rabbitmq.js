@@ -320,6 +320,16 @@ function generateSummaryData() {
 export function handleSummary(data) {
   // Generate custom summary data in the requested format
   const summaryData = generateSummaryData();
+
+  console.log("\n📊 Custom Summary");
+  console.log(summaryData.map(s =>
+    `➡️  ${s.endpoint} group ${s.groups}: ` +
+    `${s.totalRequests} reqs, ` +
+    `${s.successRate} success, ` +
+    `avg ${s.avgLatency}ms, ` +
+    `throughput ${s.throughput}/s`
+  ).join('\n'));
+
   
   return {
     "results/messagingtest-summary.html": htmlReport(data),
