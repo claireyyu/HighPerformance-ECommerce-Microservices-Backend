@@ -59,6 +59,8 @@ services:
       - RABBITMQ_URL=amqp://guest:guest@54.202.170.47:5672/
       - RABBITMQ_QUEUE=orders
     depends_on:
+      order-service:
+        condition: service_started
 
   api-gateway:
     build:
