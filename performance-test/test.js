@@ -19,7 +19,7 @@ const requestsPerThread = 10;
 const kafkaStats = [];
 const rabbitStats = [];
 
-const interval = 2000;
+const interval = 1000;
 const queueName = 'orders';
 const kafkaContainer = 'highperformance-ecommerce-microservices-backend-kafka-1';
 
@@ -44,7 +44,7 @@ function getKafkaQueueSize() {
           const end = parseInt(match[2]);
           return resolve(Math.max(0, end - current));
         }
-        return resolve(null);
+        return resolve(0);
       }
     );
   });

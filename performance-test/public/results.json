@@ -5,26 +5,26 @@
     "totalRequests": 1000,
     "success": 1000,
     "failures": 0,
-    "avgLatency": 88.6,
-    "throughput": 1079.93
+    "avgLatency": 46.59,
+    "throughput": 2088.54
   },
   {
     "endpoint": "sync",
     "groups": 4,
     "totalRequests": 2000,
-    "success": 1593,
-    "failures": 407,
-    "avgLatency": 121.25,
-    "throughput": 1390.02
+    "success": 1686,
+    "failures": 314,
+    "avgLatency": 74.68,
+    "throughput": 2282.59
   },
   {
     "endpoint": "sync",
     "groups": 6,
     "totalRequests": 3000,
-    "success": 2284,
-    "failures": 716,
-    "avgLatency": 131.23,
-    "throughput": 1282.2
+    "success": 2229,
+    "failures": 771,
+    "avgLatency": 127.6,
+    "throughput": 1191.9
   },
   {
     "endpoint": "kafka",
@@ -32,8 +32,8 @@
     "totalRequests": 1000,
     "success": 1000,
     "failures": 0,
-    "avgLatency": 44.95,
-    "throughput": 2131.32
+    "avgLatency": 49.93,
+    "throughput": 1908.09
   },
   {
     "endpoint": "kafka",
@@ -41,8 +41,8 @@
     "totalRequests": 2000,
     "success": 2000,
     "failures": 0,
-    "avgLatency": 79.61,
-    "throughput": 2407.04
+    "avgLatency": 75.41,
+    "throughput": 2586.47
   },
   {
     "endpoint": "kafka",
@@ -50,8 +50,8 @@
     "totalRequests": 3000,
     "success": 3000,
     "failures": 0,
-    "avgLatency": 119.1,
-    "throughput": 2468.33
+    "avgLatency": 98.25,
+    "throughput": 2895.5
   },
   {
     "endpoint": "rabbitmq",
@@ -59,8 +59,8 @@
     "totalRequests": 1000,
     "success": 1000,
     "failures": 0,
-    "avgLatency": 141.87,
-    "throughput": 686.86
+    "avgLatency": 84.86,
+    "throughput": 1116.12
   },
   {
     "endpoint": "rabbitmq",
@@ -68,16 +68,16 @@
     "totalRequests": 2000,
     "success": 2000,
     "failures": 0,
-    "avgLatency": 251.33,
-    "throughput": 761.8
+    "avgLatency": 152.07,
+    "throughput": 1286.75
   },
   {
     "endpoint": "rabbitmq",
     "groups": 6,
     "totalRequests": 3000,
-    "success": 2869,
-    "failures": 131,
-    "avgLatency": 299.03,
-    "throughput": 958.94
+    "success": 3000,
+    "failures": 0,
+    "avgLatency": 208.12,
+    "throughput": 1390.72
   }
 ]
