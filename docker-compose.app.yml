@@ -2,85 +2,86 @@
 
 version: '3.8'
 
-product-service:
-  build:
-    context: ./services/product-service
-    dockerfile: Dockerfile
-  ports:
-    - "8081:8081"
-  environment:
-    - PRODUCT_SERVICE_PORT=8081
-    - PRODUCT_SERVICE_HOST=0.0.0.0
-    - PRODUCT_DB_HOST=mysql
-    - PRODUCT_DB_PORT=3306
-    - PRODUCT_DB_USER=product_user
-    - PRODUCT_DB_PASSWORD=product_password
-    - PRODUCT_DB_NAME=product_db
-    - KAFKA_BROKERS=54.202.170.47:9092
-    - KAFKA_PRODUCT_TOPIC=product-events
-  depends_on:
-    mysql:
-      condition: service_healthy
+services:
+  product-service:
+    build:
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - PRODUCT_SERVICE_PORT=8081
+      - PRODUCT_SERVICE_HOST=0.0.0.0
+      - PRODUCT_DB_HOST=mysql
+      - PRODUCT_DB_PORT=3306
+      - PRODUCT_DB_USER=product_user
+      - PRODUCT_DB_PASSWORD=product_password
+      - PRODUCT_DB_NAME=product_db
+      - KAFKA_BROKERS=54.202.170.47:9092
+      - KAFKA_PRODUCT_TOPIC=product-events
+    depends_on:
+      mysql:
+        condition: service_healthy
 
-order-service:
-  build:
-    context: ./services/order-service
-    dockerfile: Dockerfile
-  ports:
-    - "8082:8082"
-  environment:
-    - ORDER_SERVICE_PORT=8082
-    - ORDER_SERVICE_HOST=0.0.0.0
-    - ORDER_DB_HOST=mysql
-    - ORDER_DB_PORT=3306
-    - ORDER_DB_USER=order_user
-    - ORDER_DB_PASSWORD=order_password
-    - ORDER_DB_NAME=order_db
-    - KAFKA_BROKERS=54.202.170.47:9092
-    - KAFKA_ORDER_TOPIC=order-events
-    - PRODUCT_SERVICE_URL=http://product-service:8081
-    - RABBITMQ_URL=amqp://guest:guest@54.202.170.47:5672/
-    - RABBITMQ_QUEUE=orders
-  depends_on:
-    mysql:
-      condition: service_healthy
-    product-service:
-      condition: service_healthy
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - ORDER_SERVICE_PORT=8082
+      - ORDER_SERVICE_HOST=0.0.0.0
+      - ORDER_DB_HOST=mysql
+      - ORDER_DB_PORT=3306
+      - ORDER_DB_USER=order_user
+      - ORDER_DB_PASSWORD=order_password
+      - ORDER_DB_NAME=order_db
+      - KAFKA_BROKERS=54.202.170.47:9092
+      - KAFKA_ORDER_TOPIC=order-events
+      - PRODUCT_SERVICE_URL=http://product-service:8081
+      - RABBITMQ_URL=amqp://guest:guest@54.202.170.47:5672/
+      - RABBITMQ_QUEUE=orders
+    depends_on:
+      mysql:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
 
-order-consumer:
-  build:
-    context: ./services/order-service
-    dockerfile: Dockerfile
-  command: ./order-consumer
-  environment:
-    - ORDER_DB_HOST=mysql
-    - ORDER_DB_PORT=3306
-    - ORDER_DB_USER=order_user
-    - ORDER_DB_PASSWORD=order_password
-    - ORDER_DB_NAME=order_db
-    - KAFKA_BROKERS=54.202.170.47:9092
-    - KAFKA_ORDER_TOPIC=order-events
-    - RABBITMQ_URL=amqp://guest:guest@54.202.170.47:5672/
-    - RABBITMQ_QUEUE=orders
-  depends_on:
-    mysql:
-      condition: service_healthy
+  order-consumer:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    command: ./order-consumer
+    environment:
+      - ORDER_DB_HOST=mysql
+      - ORDER_DB_PORT=3306
+      - ORDER_DB_USER=order_user
+      - ORDER_DB_PASSWORD=order_password
+      - ORDER_DB_NAME=order_db
+      - KAFKA_BROKERS=54.202.170.47:9092
+      - KAFKA_ORDER_TOPIC=order-events
+      - RABBITMQ_URL=amqp://guest:guest@54.202.170.47:5672/
+      - RABBITMQ_QUEUE=orders
+    depends_on:
+      mysql:
+        condition: service_healthy
 
-api-gateway:
-  build:
-    context: ./services/api-gateway
-    dockerfile: Dockerfile
-  ports:
-    - "8080:8080"
-  environment:
-    - API_GATEWAY_PORT=8080
-    - API_GATEWAY_HOST=0.0.0.0
-    - PRODUCT_SERVICE_HOST=product-service
-    - PRODUCT_SERVICE_PORT=8081
-    - ORDER_SERVICE_HOST=order-service
-    - ORDER_SERVICE_PORT=8082
-  depends_on:
-    product-service:
-      condition: service_started
-    order-service:
-      condition: service_started
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - API_GATEWAY_PORT=8080
+      - API_GATEWAY_HOST=0.0.0.0
+      - PRODUCT_SERVICE_HOST=product-service
+      - PRODUCT_SERVICE_PORT=8081
+      - ORDER_SERVICE_HOST=order-service
+      - ORDER_SERVICE_PORT=8082
+    depends_on:
+      product-service:
+        condition: service_started
+      order-service:
+        condition: service_started
