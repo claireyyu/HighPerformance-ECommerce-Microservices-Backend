@@ -2,6 +2,7 @@ package queues
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/streadway/amqp"
 )
@@ -48,8 +49,10 @@ func (r *RabbitMQClient) Publish(queueName, message string) error {
 	})
 }
 
-// ✅ 新增：并发消费队列（带 goroutine 池）
-func (r *RabbitMQClient) ConsumeWithPool(queueName string, concurrency int, handler func(string)) error {
+// ✅ 并发消费队列（带 goroutine 池 + 日志）
+func (r *RabbitMQClient) ConsumeWithPool(queueName string, concurrency int, handler func(string) error) error {
+	log.Printf("🚀 Starting RabbitMQ consumer on queue: %s", queueName)
+
 	ch, err := r.conn.Channel()
 	if err != nil {
 		return fmt.Errorf("failed to open channel: %v", err)
@@ -57,17 +60,17 @@ func (r *RabbitMQClient) ConsumeWithPool(queueName string, concurrency int, hand
 
 	_, err = ch.QueueDeclare(queueName, true, false, false, false, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to declare queue: %v", err)
 	}
 
-	err = ch.Qos(concurrency, 0, false) // 限制未ack消息数量
+	err = ch.Qos(concurrency, 0, false) // 限制未 ack 的消息
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to set Qos: %v", err)
 	}
 
 	msgs, err := ch.Consume(queueName, "", false, false, false, false, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to consume queue: %v", err)
 	}
 
 	sem := make(chan struct{}, concurrency)
@@ -77,8 +80,20 @@ func (r *RabbitMQClient) ConsumeWithPool(queueName string, concurrency int, hand
 			sem <- struct{}{}
 			go func(m amqp.Delivery) {
 				defer func() { <-sem }()
-				handler(string(m.Body))
-				_ = m.Ack(false)
+
+				log.Printf("📥 RabbitMQ received: %s", m.Body)
+
+				if err := handler(string(m.Body)); err != nil {
+					log.Printf("❌ Handler error: %v", err)
+					_ = m.Nack(false, true) // requeue
+					return
+				}
+
+				if err := m.Ack(false); err != nil {
+					log.Printf("❌ Ack failed: %v", err)
+				} else {
+					log.Printf("✅ Message processed and acknowledged")
+				}
 			}(msg)
 		}
 	}()

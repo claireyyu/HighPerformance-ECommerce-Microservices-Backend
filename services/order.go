@@ -185,8 +185,26 @@ func StartOrderService() error {
 	)
 
 	go func() {
-		if err := rabbit.ConsumeWithPool("orders", 10, consumeAndInsert); err != nil {
-			log.Printf("❌ RabbitMQ consume error: %v", err)
+		err := rabbit.ConsumeWithPool("orders", 10, func(msg string) error {
+			log.Printf("🔧 Handling: %s", msg)
+
+			var payload struct {
+				Type  string `json:"type"`
+				Order Order  `json:"order"`
+			}
+			if err := json.Unmarshal([]byte(msg), &payload); err != nil {
+				return err
+			}
+
+			o := payload.Order
+			_, err := db.Exec(
+				"INSERT INTO orders (user_id, product_id, quantity, status, created_at) VALUES (?, ?, ?, ?, ?)",
+				o.UserID, o.ProductID, o.Quantity, o.Status, o.CreatedAt,
+			)
+			return err
+		})
+		if err != nil {
+			log.Printf("❌ Failed to start RabbitMQ consumer: %v", err)
 		}
 	}()
 

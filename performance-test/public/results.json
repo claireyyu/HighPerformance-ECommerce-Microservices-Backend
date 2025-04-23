@@ -3,28 +3,28 @@
     "endpoint": "sync",
     "groups": 2,
     "totalRequests": 2000,
-    "success": 1655,
-    "failures": 345,
-    "avgLatency": 92.35,
-    "throughput": 1911.68
+    "success": 1755,
+    "failures": 245,
+    "avgLatency": 86.95,
+    "throughput": 2003.48
   },
   {
     "endpoint": "sync",
     "groups": 4,
     "totalRequests": 4000,
-    "success": 3348,
-    "failures": 652,
-    "avgLatency": 132.55,
-    "throughput": 1434.48
+    "success": 2894,
+    "failures": 1106,
+    "avgLatency": 136.27,
+    "throughput": 1617.89
   },
   {
     "endpoint": "sync",
     "groups": 6,
     "totalRequests": 6000,
-    "success": 4157,
-    "failures": 1843,
-    "avgLatency": 193.17,
-    "throughput": 1352.66
+    "success": 4403,
+    "failures": 1597,
+    "avgLatency": 182.19,
+    "throughput": 1974.4
   },
   {
     "endpoint": "kafka",
@@ -32,8 +32,8 @@
     "totalRequests": 2000,
     "success": 2000,
     "failures": 0,
-    "avgLatency": 71.55,
-    "throughput": 2639.74
+    "avgLatency": 109.97,
+    "throughput": 1600.46
   },
   {
     "endpoint": "kafka",
@@ -41,8 +41,8 @@
     "totalRequests": 4000,
     "success": 4000,
     "failures": 0,
-    "avgLatency": 137.52,
-    "throughput": 2851.33
+    "avgLatency": 160.34,
+    "throughput": 2387.98
   },
   {
     "endpoint": "kafka",
@@ -50,8 +50,8 @@
     "totalRequests": 6000,
     "success": 6000,
     "failures": 0,
-    "avgLatency": 185.67,
-    "throughput": 3178.51
+    "avgLatency": 224.91,
+    "throughput": 2576.89
   },
   {
     "endpoint": "rabbitmq",
@@ -59,25 +59,25 @@
     "totalRequests": 2000,
     "success": 2000,
     "failures": 0,
-    "avgLatency": 103.05,
-    "throughput": 1885.21
+    "avgLatency": 147.67,
+    "throughput": 1314.15
   },
   {
     "endpoint": "rabbitmq",
     "groups": 4,
     "totalRequests": 4000,
-    "success": 3983,
-    "failures": 17,
-    "avgLatency": 189.17,
-    "throughput": 2037.44
+    "success": 3988,
+    "failures": 12,
+    "avgLatency": 278.95,
+    "throughput": 1408.98
   },
   {
     "endpoint": "rabbitmq",
     "groups": 6,
     "totalRequests": 6000,
-    "success": 5958,
-    "failures": 42,
-    "avgLatency": 311.13,
-    "throughput": 1862.52
+    "success": 5974,
+    "failures": 26,
+    "avgLatency": 423.36,
+    "throughput": 1388.21
   }
 ]
