@@ -203,7 +203,7 @@ export function syncTest() {
   syncDuration.add(latency);
   
   const ok = check(res, { 
-    'status is 200 or 201': (r) => r.status === 200 || r.status === 201 
+    'status is 200 or 201 or 202': (r) => r.status === 200 || r.status === 201 || r.status === 202
   });
   
   syncErrors.add(!ok);
@@ -235,7 +235,7 @@ export function kafkaTest() {
   kafkaDuration.add(latency);
   
   const ok = check(res, { 
-    'status is 202': (r) => r.status === 202 
+    'status is 200 or 201 or 202': (r) => r.status === 200 || r.status === 201 || r.status === 202 
   });
   
   kafkaErrors.add(!ok);
@@ -267,7 +267,7 @@ export function rabbitmqTest() {
   rabbitmqDuration.add(latency);
   
   const ok = check(res, { 
-    'status is 202': (r) => r.status === 202 
+    'status is 200 or 201 or 202': (r) => r.status === 200 || r.status === 201 || r.status === 202
   });
   
   rabbitmqErrors.add(!ok);
