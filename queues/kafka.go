@@ -16,11 +16,17 @@ type KafkaProducer struct {
 
 func NewKafkaProducer(brokers string) (*KafkaProducer, error) {
 	config := sarama.NewConfig()
-	config.Producer.Return.Successes = true
 	config.Producer.RequiredAcks = sarama.WaitForAll
+	config.Producer.Retry.Max = 5
+	config.Producer.Idempotent = true
+
+	// 🚀 批处理配置
+	config.Producer.Flush.Messages = 500
+	config.Producer.Flush.Frequency = 50 * time.Millisecond
+	config.Producer.Flush.MaxMessages = 500
+
+	config.Producer.Return.Successes = true
 	config.Producer.Compression = sarama.CompressionSnappy
-	config.Producer.Retry.Max = 3
-	config.Producer.Timeout = 5 * time.Second
 
 	producer, err := sarama.NewSyncProducer(strings.Split(brokers, ","), config)
 	if err != nil {

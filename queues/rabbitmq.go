@@ -51,52 +51,52 @@ func (r *RabbitMQClient) Publish(queueName, message string) error {
 
 // ✅ 并发消费队列（带 goroutine 池 + 日志）
 func (r *RabbitMQClient) ConsumeWithPool(queueName string, concurrency int, handler func(string) error) error {
-	log.Printf("🚀 Starting RabbitMQ consumer on queue: %s", queueName)
+	log.Printf("🚀 Starting RabbitMQ consumer with %d workers on queue: %s", concurrency, queueName)
 
-	ch, err := r.conn.Channel()
-	if err != nil {
-		return fmt.Errorf("failed to open channel: %v", err)
-	}
+	for i := 0; i < concurrency; i++ {
+		go func(workerID int) {
+			ch, err := r.conn.Channel()
+			if err != nil {
+				log.Printf("❌ Worker %d: failed to open channel: %v", workerID, err)
+				return
+			}
+			defer ch.Close()
 
-	_, err = ch.QueueDeclare(queueName, true, false, false, false, nil)
-	if err != nil {
-		return fmt.Errorf("failed to declare queue: %v", err)
-	}
+			_, err = ch.QueueDeclare(queueName, true, false, false, false, nil)
+			if err != nil {
+				log.Printf("❌ Worker %d: queue declare error: %v", workerID, err)
+				return
+			}
 
-	err = ch.Qos(concurrency, 0, false) // 限制未 ack 的消息
-	if err != nil {
-		return fmt.Errorf("failed to set Qos: %v", err)
-	}
+			err = ch.Qos(1, 0, false) // 每个 goroutine 只处理一个未 ack 消息
+			if err != nil {
+				log.Printf("❌ Worker %d: QoS error: %v", workerID, err)
+				return
+			}
 
-	msgs, err := ch.Consume(queueName, "", false, false, false, false, nil)
-	if err != nil {
-		return fmt.Errorf("failed to consume queue: %v", err)
-	}
+			msgs, err := ch.Consume(queueName, "", false, false, false, false, nil)
+			if err != nil {
+				log.Printf("❌ Worker %d: consume error: %v", workerID, err)
+				return
+			}
 
-	sem := make(chan struct{}, concurrency)
+			for msg := range msgs {
+				log.Printf("📥 [Worker %d] Received: %s", workerID, msg.Body)
 
-	go func() {
-		for msg := range msgs {
-			sem <- struct{}{}
-			go func(m amqp.Delivery) {
-				defer func() { <-sem }()
-
-				log.Printf("📥 RabbitMQ received: %s", m.Body)
-
-				if err := handler(string(m.Body)); err != nil {
-					log.Printf("❌ Handler error: %v", err)
-					_ = m.Nack(false, true) // requeue
-					return
+				if err := handler(string(msg.Body)); err != nil {
+					log.Printf("❌ [Worker %d] handler error: %v", workerID, err)
+					_ = msg.Nack(false, true) // requeue
+					continue
 				}
 
-				if err := m.Ack(false); err != nil {
-					log.Printf("❌ Ack failed: %v", err)
+				if err := msg.Ack(false); err != nil {
+					log.Printf("❌ [Worker %d] ack error: %v", workerID, err)
 				} else {
-					log.Printf("✅ Message processed and acknowledged")
+					log.Printf("✅ [Worker %d] message acked", workerID)
 				}
-			}(msg)
-		}
-	}()
+			}
+		}(i)
+	}
 
 	return nil
 }

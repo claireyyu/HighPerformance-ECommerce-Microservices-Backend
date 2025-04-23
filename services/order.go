@@ -58,6 +58,9 @@ func StartOrderService() error {
 	}
 	defer db.Close()
 
+	db.SetMaxOpenConns(300)
+	db.SetMaxIdleConns(100)
+
 	if err := db.Ping(); err != nil {
 		return fmt.Errorf("failed to ping MySQL: %v", err)
 	}
@@ -185,7 +188,7 @@ func StartOrderService() error {
 	)
 
 	go func() {
-		err := rabbit.ConsumeWithPool("orders", 10, func(msg string) error {
+		err := rabbit.ConsumeWithPool("orders", 50, func(msg string) error {
 			log.Printf("🔧 Handling: %s", msg)
 
 			var payload struct {
