@@ -1,67 +1,112 @@
-<!-- public/index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Load Test Visualization</title>
+  <meta charset="UTF-8" />
+  <title>Performance Results</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 2rem;
+    }
+    canvas {
+      margin-bottom: 3rem;
+    }
+  </style>
 </head>
 <body>
-  <h2>Performance Results</h2>
+  <h1>📈 Performance Benchmark</h1>
+
+  <h2>Throughput vs Thread Groups</h2>
   <canvas id="throughputChart" width="800" height="400"></canvas>
+
+  <h2>Average Latency vs Thread Groups</h2>
   <canvas id="latencyChart" width="800" height="400"></canvas>
+
+  <h2>Queue Size Over Time</h2>
+  <canvas id="queueChart" width="800" height="400"></canvas>
+
   <script>
-    fetch('/results.json')
-      .then(res => res.json())
-      .then(data => {
-        const endpoints = [...new Set(data.map(d => d.endpoint))];
-        const threadGroups = [...new Set(data.map(d => d.groups))];
+    Promise.all([
+      fetch('/results.json').then(res => res.json()),
+      fetch('/queues-rabbitmq.json').then(res => res.json()),
+      fetch('/queues-kafka.json').then(res => res.json())
+    ]).then(([results, rabbitQueue, kafkaQueue]) => {
+      const endpoints = [...new Set(results.map(r => r.endpoint))];
+      const threadGroups = [...new Set(results.map(r => r.groups))];
 
-        const ctx1 = document.getElementById('throughputChart').getContext('2d');
-        const ctx2 = document.getElementById('latencyChart').getContext('2d');
+      const throughputCtx = document.getElementById('throughputChart').getContext('2d');
+      const latencyCtx = document.getElementById('latencyChart').getContext('2d');
+      const queueCtx = document.getElementById('queueChart').getContext('2d');
 
-        const datasets1 = endpoints.map(endpoint => ({
-          label: `${endpoint} - throughput`,
-          data: data.filter(d => d.endpoint === endpoint).map(d => d.throughput),
-          borderWidth: 2,
-          fill: false
-        }));
+      const colors = {
+        sync: 'rgba(255, 99, 132, 1)',
+        kafka: 'rgba(54, 162, 235, 1)',
+        rabbitmq: 'rgba(255, 206, 86, 1)'
+      };
 
-        const datasets2 = endpoints.map(endpoint => ({
-          label: `${endpoint} - latency`,
-          data: data.filter(d => d.endpoint === endpoint).map(d => d.avgLatency),
-          borderWidth: 2,
-          fill: false
-        }));
-
-        new Chart(ctx1, {
-          type: 'line',
-          data: {
-            labels: threadGroups,
-            datasets: datasets1
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              title: { display: true, text: 'Throughput vs Thread Groups' }
-            }
-          }
-        });
-
-        new Chart(ctx2, {
-          type: 'line',
-          data: {
-            labels: threadGroups,
-            datasets: datasets2
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              title: { display: true, text: 'Average Latency vs Thread Groups' }
-            }
-          }
-        });
+      const makeDataset = (key, metric) => ({
+        label: key,
+        data: results
+          .filter(r => r.endpoint === key)
+          .sort((a, b) => a.groups - b.groups)
+          .map(r => r[metric]),
+        borderColor: colors[key],
+        backgroundColor: colors[key],
+        borderWidth: 2,
+        fill: false
       });
+
+      new Chart(throughputCtx, {
+        type: 'line',
+        data: {
+          labels: threadGroups,
+          datasets: endpoints.map(e => makeDataset(e, 'throughput'))
+        },
+        options: {
+          plugins: { title: { display: true, text: 'Throughput' } }
+        }
+      });
+
+      new Chart(latencyCtx, {
+        type: 'line',
+        data: {
+          labels: threadGroups,
+          datasets: endpoints.map(e => makeDataset(e, 'avgLatency'))
+        },
+        options: {
+          plugins: { title: { display: true, text: 'Average Latency (ms)' } }
+        }
+      });
+
+      new Chart(queueCtx, {
+        type: 'line',
+        data: {
+          labels: rabbitQueue.map(p => p.time),
+          datasets: [
+            {
+              label: 'RabbitMQ',
+              data: rabbitQueue.map(p => p.size),
+              borderColor: colors.rabbitmq,
+              fill: false
+            },
+            {
+              label: 'Kafka',
+              data: kafkaQueue.map(p => p.size),
+              borderColor: colors.kafka,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          plugins: { title: { display: true, text: 'Queue Size Over Time (seconds)' } },
+          scales: {
+            x: { title: { display: true, text: 'Time (s)' } },
+            y: { beginAtZero: true, title: { display: true, text: 'Messages in Queue' } }
+          }
+        }
+      });
+    });
   </script>
 </body>
 </html>
