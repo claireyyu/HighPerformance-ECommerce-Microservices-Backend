@@ -1,7 +1,9 @@
 package queues
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -41,30 +43,55 @@ func (kp *KafkaProducer) Close() error {
 	return kp.producer.Close()
 }
 
-// StartKafkaConsumer starts a basic consumer for a topic and prints/logs message
-func StartKafkaConsumer(brokers []string, topic string, handler func(msg string)) error {
-	consumer, err := sarama.NewConsumer(brokers, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create consumer: %v", err)
+// ----- ✅ Kafka Consumer Group with Goroutine Pool -----
+
+type kafkaHandler struct {
+	handler func(string)
+	pool    chan struct{}
+}
+
+func (h *kafkaHandler) Setup(sarama.ConsumerGroupSession) error   { return nil }
+func (h *kafkaHandler) Cleanup(sarama.ConsumerGroupSession) error { return nil }
+
+func (h *kafkaHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	for msg := range claim.Messages() {
+		h.pool <- struct{}{} // block if pool is full
+		go func(m *sarama.ConsumerMessage) {
+			defer func() { <-h.pool }()
+			h.handler(string(m.Value))
+			session.MarkMessage(m, "")
+		}(msg)
 	}
-
-	partitions, err := consumer.Partitions(topic)
-	if err != nil {
-		return fmt.Errorf("failed to get partitions: %v", err)
-	}
-
-	for _, partition := range partitions {
-		pc, err := consumer.ConsumePartition(topic, partition, sarama.OffsetNewest)
-		if err != nil {
-			return fmt.Errorf("failed to consume partition: %v", err)
-		}
-
-		go func(pc sarama.PartitionConsumer) {
-			for msg := range pc.Messages() {
-				handler(string(msg.Value))
-			}
-		}(pc)
-	}
-
 	return nil
+}
+
+// StartGroupConsumer creates a consumer group with limited concurrency
+func StartGroupConsumer(brokers []string, topic string, handler func(string)) {
+	groupID := "ecommerce-group"
+	concurrency := 10
+
+	config := sarama.NewConfig()
+	config.Version = sarama.V2_1_0_0
+	config.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategyRoundRobin
+	config.Consumer.Offsets.Initial = sarama.OffsetNewest
+
+	consumerGroup, err := sarama.NewConsumerGroup(brokers, groupID, config)
+	if err != nil {
+		log.Fatalf("❌ Failed to create Kafka consumer group: %v", err)
+	}
+
+	ctx := context.Background()
+	h := &kafkaHandler{
+		handler: handler,
+		pool:    make(chan struct{}, concurrency),
+	}
+
+	go func() {
+		for {
+			if err := consumerGroup.Consume(ctx, []string{topic}, h); err != nil {
+				log.Printf("❌ Error from consumer group: %v", err)
+				time.Sleep(2 * time.Second) // retry delay
+			}
+		}
+	}()
 }

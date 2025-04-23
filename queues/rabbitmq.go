@@ -11,12 +11,10 @@ type RabbitMQClient struct {
 	URL  string
 }
 
-// 创建 RabbitMQ 客户端
 func NewRabbitMQClient(url string) *RabbitMQClient {
 	return &RabbitMQClient{URL: url}
 }
 
-// 建立连接（只连一次）
 func (r *RabbitMQClient) Connect() error {
 	conn, err := amqp.Dial(r.URL)
 	if err != nil {
@@ -26,12 +24,13 @@ func (r *RabbitMQClient) Connect() error {
 	return nil
 }
 
-// 发布消息（每次新建一个 channel，线程安全）
-func (r *RabbitMQClient) Publish(queueName, message string) error {
-	if r.conn == nil {
-		return fmt.Errorf("RabbitMQ connection is not initialized")
+func (r *RabbitMQClient) Close() {
+	if r.conn != nil {
+		_ = r.conn.Close()
 	}
+}
 
+func (r *RabbitMQClient) Publish(queueName, message string) error {
 	ch, err := r.conn.Channel()
 	if err != nil {
 		return fmt.Errorf("failed to open channel: %v", err)
@@ -49,8 +48,8 @@ func (r *RabbitMQClient) Publish(queueName, message string) error {
 	})
 }
 
-// 消费者（仅用于消费队列）
-func (r *RabbitMQClient) Consume(queueName string, handler func(string)) error {
+// ✅ 新增：并发消费队列（带 goroutine 池）
+func (r *RabbitMQClient) ConsumeWithPool(queueName string, concurrency int, handler func(string)) error {
 	ch, err := r.conn.Channel()
 	if err != nil {
 		return fmt.Errorf("failed to open channel: %v", err)
@@ -61,23 +60,28 @@ func (r *RabbitMQClient) Consume(queueName string, handler func(string)) error {
 		return err
 	}
 
-	msgs, err := ch.Consume(queueName, "", true, false, false, false, nil)
+	err = ch.Qos(concurrency, 0, false) // 限制未ack消息数量
 	if err != nil {
 		return err
 	}
 
+	msgs, err := ch.Consume(queueName, "", false, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+
+	sem := make(chan struct{}, concurrency)
+
 	go func() {
 		for msg := range msgs {
-			handler(string(msg.Body))
+			sem <- struct{}{}
+			go func(m amqp.Delivery) {
+				defer func() { <-sem }()
+				handler(string(m.Body))
+				_ = m.Ack(false)
+			}(msg)
 		}
 	}()
 
 	return nil
-}
-
-// 关闭连接
-func (r *RabbitMQClient) Close() {
-	if r.conn != nil {
-		_ = r.conn.Close()
-	}
 }

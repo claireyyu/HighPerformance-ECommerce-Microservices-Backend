@@ -23,7 +23,6 @@ type Order struct {
 }
 
 func StartOrderService() error {
-	// Kafka + RabbitMQ config
 	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
 	kafkaTopic := os.Getenv("KAFKA_TOPIC")
 	rabbitURL := fmt.Sprintf(
@@ -34,21 +33,18 @@ func StartOrderService() error {
 		os.Getenv("RABBITMQ_PORT"),
 	)
 
-	// Kafka producer
 	kafkaProducer, err := queues.NewKafkaProducer(kafkaBrokers)
 	if err != nil {
 		return fmt.Errorf("failed to create Kafka producer: %v", err)
 	}
 	defer kafkaProducer.Close()
 
-	// RabbitMQ client
 	rabbit := queues.NewRabbitMQClient(rabbitURL)
 	if err := rabbit.Connect(); err != nil {
 		return fmt.Errorf("failed to connect to RabbitMQ: %v", err)
 	}
 	defer rabbit.Close()
 
-	// MySQL database
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_PASSWORD"),
@@ -78,16 +74,14 @@ func StartOrderService() error {
 		return fmt.Errorf("failed to create orders table: %v", err)
 	}
 
-	// 👇 消费消息后写入数据库
 	consumeAndInsert := func(raw string) {
 		log.Printf("[Consuming] %s", raw)
-
 		var payload struct {
 			Type  string `json:"type"`
 			Order Order  `json:"order"`
 		}
 		if err := json.Unmarshal([]byte(raw), &payload); err != nil {
-			log.Printf("❌ JSON Unmarshal error: %v", err)
+			log.Printf("❌ JSON error: %v", err)
 			return
 		}
 
@@ -97,10 +91,10 @@ func StartOrderService() error {
 			o.UserID, o.ProductID, o.Quantity, o.Status, o.CreatedAt,
 		)
 		if err != nil {
-			log.Printf("❌ Error inserting order: %v", err)
+			log.Printf("❌ Insert error: %v", err)
 			return
 		}
-		log.Printf("✅ Successfully inserted order: user_id=%d product_id=%d", o.UserID, o.ProductID)
+		log.Printf("✅ Order inserted: user_id=%d product_id=%d", o.UserID, o.ProductID)
 	}
 
 	http.HandleFunc("/orders/sync", func(w http.ResponseWriter, r *http.Request) {
@@ -127,12 +121,9 @@ func StartOrderService() error {
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "Order inserted into DB (sync)",
-		})
+		json.NewEncoder(w).Encode(map[string]string{"message": "Order inserted (sync)"})
 	})
 
-	// ✉️ HTTP - Kafka 异步发送
 	http.HandleFunc("/orders/async/kafka", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -147,10 +138,7 @@ func StartOrderService() error {
 		o.Status = "pending"
 		o.CreatedAt = time.Now()
 
-		event := map[string]interface{}{
-			"type":  "order_created",
-			"order": o,
-		}
+		event := map[string]interface{}{"type": "order_created", "order": o}
 		eventJSON, _ := json.Marshal(event)
 
 		if err := kafkaProducer.PublishToKafka(kafkaTopic, string(eventJSON)); err != nil {
@@ -159,12 +147,9 @@ func StartOrderService() error {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "Order sent to Kafka",
-		})
+		json.NewEncoder(w).Encode(map[string]string{"message": "Order sent to Kafka"})
 	})
 
-	// ✉️ HTTP - RabbitMQ 异步发送
 	http.HandleFunc("/orders/async/rabbitmq", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -179,10 +164,7 @@ func StartOrderService() error {
 		o.Status = "pending"
 		o.CreatedAt = time.Now()
 
-		event := map[string]interface{}{
-			"type":  "order_created",
-			"order": o,
-		}
+		event := map[string]interface{}{"type": "order_created", "order": o}
 		eventJSON, _ := json.Marshal(event)
 
 		if err := rabbit.Publish("orders", string(eventJSON)); err != nil {
@@ -191,20 +173,27 @@ func StartOrderService() error {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "Order sent to RabbitMQ",
-		})
+		json.NewEncoder(w).Encode(map[string]string{"message": "Order sent to RabbitMQ"})
 	})
 
-	// 🧠 启动消费者监听
-	go queues.StartKafkaConsumer([]string{kafkaBrokers}, kafkaTopic, consumeAndInsert)
-	go rabbit.Consume("orders", consumeAndInsert)
+	go queues.StartGroupConsumer(
+		[]string{kafkaBrokers},
+		kafkaTopic,
+		func(msg string) {
+			consumeAndInsert(msg)
+		},
+	)
 
-	// 🧩 启动 HTTP 服务
+	go func() {
+		if err := rabbit.ConsumeWithPool("orders", 10, consumeAndInsert); err != nil {
+			log.Printf("❌ RabbitMQ consume error: %v", err)
+		}
+	}()
+
 	port := os.Getenv("ORDER_SERVICE_PORT")
 	if port == "" {
 		port = "8081"
 	}
-	log.Printf("Order Service running on port %s", port)
+	log.Printf("📦 Order Service running on port %s", port)
 	return http.ListenAndServe(":"+port, nil)
 }

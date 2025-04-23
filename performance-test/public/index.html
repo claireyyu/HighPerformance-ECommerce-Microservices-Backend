@@ -26,18 +26,24 @@
   <h2>Queue Size Over Time</h2>
   <canvas id="queueChart" width="800" height="400"></canvas>
 
+  <h2>Kafka & RabbitMQ Rates</h2>
+  <canvas id="rateChart" width="800" height="400"></canvas>
+
   <script>
     Promise.all([
       fetch('/results.json').then(res => res.json()),
       fetch('/queues-rabbitmq.json').then(res => res.json()),
-      fetch('/queues-kafka.json').then(res => res.json())
-    ]).then(([results, rabbitQueue, kafkaQueue]) => {
+      fetch('/queues-kafka.json').then(res => res.json()),
+      fetch('/kafka-stats.json').then(res => res.json()),
+      fetch('/rabbit-stats.json').then(res => res.json())
+    ]).then(([results, rabbitQueue, kafkaQueue, kafkaStats, rabbitStats]) => {
       const endpoints = [...new Set(results.map(r => r.endpoint))];
       const threadGroups = [...new Set(results.map(r => r.groups))];
 
       const throughputCtx = document.getElementById('throughputChart').getContext('2d');
       const latencyCtx = document.getElementById('latencyChart').getContext('2d');
       const queueCtx = document.getElementById('queueChart').getContext('2d');
+      const rateCtx = document.getElementById('rateChart').getContext('2d');
 
       const colors = {
         sync: 'rgba(255, 99, 132, 1)',
@@ -64,7 +70,7 @@
           datasets: endpoints.map(e => makeDataset(e, 'throughput'))
         },
         options: {
-          plugins: { title: { display: true, text: 'Throughput' } }
+          plugins: { title: { display: true, text: 'Throughput (requests/sec)' } }
         }
       });
 
@@ -85,13 +91,13 @@
           labels: rabbitQueue.map(p => p.time),
           datasets: [
             {
-              label: 'RabbitMQ',
+              label: 'RabbitMQ Queue',
               data: rabbitQueue.map(p => p.size),
               borderColor: colors.rabbitmq,
               fill: false
             },
             {
-              label: 'Kafka',
+              label: 'Kafka Queue',
               data: kafkaQueue.map(p => p.size),
               borderColor: colors.kafka,
               fill: false
@@ -99,10 +105,50 @@
           ]
         },
         options: {
-          plugins: { title: { display: true, text: 'Queue Size Over Time (seconds)' } },
+          plugins: { title: { display: true, text: 'Queue Size Over Time' } },
           scales: {
             x: { title: { display: true, text: 'Time (s)' } },
-            y: { beginAtZero: true, title: { display: true, text: 'Messages in Queue' } }
+            y: { beginAtZero: true, title: { display: true, text: 'Queue Size' } }
+          }
+        }
+      });
+
+      new Chart(rateCtx, {
+        type: 'line',
+        data: {
+          labels: kafkaStats.map(p => p.time),
+          datasets: [
+            {
+              label: 'Kafka In',
+              data: kafkaStats.map(p => p.in),
+              borderColor: 'rgba(54, 162, 235, 1)',
+              fill: false
+            },
+            {
+              label: 'Kafka Out',
+              data: kafkaStats.map(p => p.out),
+              borderColor: 'rgba(54, 162, 235, 0.4)',
+              fill: false
+            },
+            {
+              label: 'RabbitMQ In',
+              data: rabbitStats.map(p => p.in),
+              borderColor: 'rgba(255, 206, 86, 1)',
+              fill: false
+            },
+            {
+              label: 'RabbitMQ Out',
+              data: rabbitStats.map(p => p.out),
+              borderColor: 'rgba(255, 206, 86, 0.4)',
+              fill: false
+            }
+          ]
+        },
+        options: {
+          plugins: { title: { display: true, text: 'Message Rate (In / Out)' } },
+          scales: {
+            x: { title: { display: true, text: 'Time (s)' } },
+            y: { beginAtZero: true, title: { display: true, text: 'Messages/sec' } }
           }
         }
       });
