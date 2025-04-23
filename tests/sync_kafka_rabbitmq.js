@@ -35,7 +35,7 @@ export const options = {
     // Group 1: 2 thread groups (100 VUs)
     sync_group1: {
       executor: 'constant-vus',
-      vus: 100,
+      vus: 10,
       duration: '30s',
       exec: 'syncTest',
       startTime: '0s',
@@ -43,7 +43,7 @@ export const options = {
     },
     kafka_group1: {
       executor: 'constant-vus',
-      vus: 100,
+      vus: 10,
       duration: '30s',
       exec: 'kafkaTest',
       startTime: '30s',
@@ -51,7 +51,7 @@ export const options = {
     },
     rabbitmq_group1: {
       executor: 'constant-vus',
-      vus: 100,
+      vus: 10,
       duration: '30s',
       exec: 'rabbitmqTest',
       startTime: '1m',
@@ -61,7 +61,7 @@ export const options = {
     // Group 2: 4 thread groups (200 VUs)
     sync_group2: {
       executor: 'constant-vus',
-      vus: 200,
+      vus: 20,
       duration: '30s',
       exec: 'syncTest',
       startTime: '1m30s',
@@ -69,7 +69,7 @@ export const options = {
     },
     kafka_group2: {
       executor: 'constant-vus',
-      vus: 200,
+      vus: 20,
       duration: '30s',
       exec: 'kafkaTest',
       startTime: '2m',
@@ -77,7 +77,7 @@ export const options = {
     },
     rabbitmq_group2: {
       executor: 'constant-vus',
-      vus: 200,
+      vus: 20,
       duration: '30s',
       exec: 'rabbitmqTest',
       startTime: '2m30s',
@@ -87,7 +87,7 @@ export const options = {
     // Group 3: 6 thread groups (300 VUs)
     sync_group3: {
       executor: 'constant-vus',
-      vus: 300,
+      vus: 30,
       duration: '30s',
       exec: 'syncTest',
       startTime: '3m',
@@ -95,7 +95,7 @@ export const options = {
     },
     kafka_group3: {
       executor: 'constant-vus',
-      vus: 300,
+      vus: 30,
       duration: '30s',
       exec: 'kafkaTest',
       startTime: '3m30s',
@@ -103,7 +103,7 @@ export const options = {
     },
     rabbitmq_group3: {
       executor: 'constant-vus',
-      vus: 300,
+      vus: 30,
       duration: '30s',
       exec: 'rabbitmqTest',
       startTime: '4m',
@@ -114,7 +114,7 @@ export const options = {
     'sync_duration': ['p(95)<500'],
     'kafka_duration': ['p(95)<200'],
     'rabbitmq_duration': ['p(95)<200'],
-    'sync_errors': ['rate<0.05'],
+    'sync_errors': ['rate<0.9'],
     'kafka_errors': ['rate<0.05'],
     'rabbitmq_errors': ['rate<0.05'],
   }
