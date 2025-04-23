@@ -5,26 +5,26 @@
     "totalRequests": 1000,
     "success": 1000,
     "failures": 0,
-    "avgLatency": 46.59,
-    "throughput": 2088.54
+    "avgLatency": 92.13,
+    "throughput": 1040.67
   },
   {
     "endpoint": "sync",
     "groups": 4,
     "totalRequests": 2000,
-    "success": 1686,
-    "failures": 314,
-    "avgLatency": 74.68,
-    "throughput": 2282.59
+    "success": 970,
+    "failures": 1030,
+    "avgLatency": 259.12,
+    "throughput": 455.22
   },
   {
     "endpoint": "sync",
     "groups": 6,
     "totalRequests": 3000,
-    "success": 2229,
-    "failures": 771,
-    "avgLatency": 127.6,
-    "throughput": 1191.9
+    "success": 1552,
+    "failures": 1448,
+    "avgLatency": 198.95,
+    "throughput": 714.58
   },
   {
     "endpoint": "kafka",
@@ -32,17 +32,17 @@
     "totalRequests": 1000,
     "success": 1000,
     "failures": 0,
-    "avgLatency": 49.93,
-    "throughput": 1908.09
+    "avgLatency": 156.76,
+    "throughput": 601.87
   },
   {
     "endpoint": "kafka",
     "groups": 4,
     "totalRequests": 2000,
-    "success": 2000,
-    "failures": 0,
-    "avgLatency": 75.41,
-    "throughput": 2586.47
+    "success": 1992,
+    "failures": 8,
+    "avgLatency": 116.43,
+    "throughput": 1654.19
   },
   {
     "endpoint": "kafka",
@@ -50,8 +50,8 @@
     "totalRequests": 3000,
     "success": 3000,
     "failures": 0,
-    "avgLatency": 98.25,
-    "throughput": 2895.5
+    "avgLatency": 125.13,
+    "throughput": 2236.35
   },
   {
     "endpoint": "rabbitmq",
@@ -59,8 +59,8 @@
     "totalRequests": 1000,
     "success": 1000,
     "failures": 0,
-    "avgLatency": 84.86,
-    "throughput": 1116.12
+    "avgLatency": 100.1,
+    "throughput": 969.66
   },
   {
     "endpoint": "rabbitmq",
@@ -68,16 +68,16 @@
     "totalRequests": 2000,
     "success": 2000,
     "failures": 0,
-    "avgLatency": 152.07,
-    "throughput": 1286.75
+    "avgLatency": 223.37,
+    "throughput": 867.3
   },
   {
     "endpoint": "rabbitmq",
     "groups": 6,
     "totalRequests": 3000,
-    "success": 3000,
-    "failures": 0,
-    "avgLatency": 208.12,
-    "throughput": 1390.72
+    "success": 2987,
+    "failures": 13,
+    "avgLatency": 366,
+    "throughput": 796.9
   }
 ]

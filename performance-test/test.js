@@ -4,12 +4,15 @@ const express = require('express');
 const { exec } = require('child_process');
 const { performance } = require('perf_hooks');
 
+// Configuration
+const baseUrl = process.env.BASE_URL || 'http://localhost:8081';
+
 fs.mkdirSync('public', { recursive: true });
 
 const endpoints = {
-  sync: 'http://localhost:8081/orders/sync',
-  kafka: 'http://localhost:8081/orders/async/kafka',
-  rabbitmq: 'http://localhost:8081/orders/async/rabbitmq'
+  sync: `${baseUrl}/orders/sync`,
+  kafka: `${baseUrl}/orders/async/kafka`,
+  rabbitmq: `${baseUrl}/orders/async/rabbitmq`
 };
 
 const threadGroups = [2, 4, 6];
@@ -18,6 +21,7 @@ const requestsPerThread = 10;
 
 const kafkaStats = [];
 const rabbitStats = [];
+const summaryData = []; // 新增：存储汇总数据
 
 const interval = 1000;
 const queueName = 'orders';
@@ -72,6 +76,7 @@ async function runTest(endpointKey, url, groupCount) {
   const results = [];
   const totalThreads = groupCount * threadsPerGroup;
   const promises = [];
+  const startTime = performance.now();
 
   for (let i = 0; i < totalThreads; i++) {
     promises.push(
@@ -84,13 +89,26 @@ async function runTest(endpointKey, url, groupCount) {
     );
   }
 
-  const start = performance.now();
   await Promise.all(promises);
-  const duration = (performance.now() - start) / 1000;
+  const wallTime = (performance.now() - startTime) / 1000;
 
   const successes = results.filter(r => r.success);
+  const failures = results.filter(r => !r.success);
   const avgLatency = successes.reduce((a, b) => a + b.latency, 0) / successes.length || 0;
-  const throughput = successes.length / duration;
+  const throughput = successes.length / wallTime;
+
+  // 新增：记录汇总数据
+  summaryData.push({
+    endpoint: endpointKey,
+    groups: groupCount,
+    totalRequests: results.length,
+    successCount: successes.length,
+    failureCount: failures.length,
+    successRate: `${((successes.length / results.length) * 100).toFixed(2)}%`,
+    wallTime: wallTime.toFixed(2),
+    avgLatency: Number(avgLatency.toFixed(2)),
+    throughput: Number(throughput.toFixed(2))
+  });
 
   return {
     endpoint: endpointKey,

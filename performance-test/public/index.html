@@ -12,6 +12,19 @@
     canvas {
       margin-bottom: 3rem;
     }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 2rem;
+    }
+    table th, table td {
+      padding: 8px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    table th {
+      background-color: #f2f2f2;
+    }
   </style>
 </head>
 <body>
@@ -153,6 +166,45 @@
         }
       });
     });
+
+    // ✅ 加载 summary 表格
+    fetch('/summary.json')
+      .then(res => res.json())
+      .then(summary => {
+        const table = document.createElement('table');
+        table.innerHTML = `
+          <caption style="font-weight:bold; margin-bottom:1rem;">Performance Summary</caption>
+          <thead>
+            <tr>
+              <th>Endpoint</th>
+              <th>Thread Groups</th>
+              <th>Total Requests</th>
+              <th>Success Count</th>
+              <th>Failure Count</th>
+              <th>Success Rate</th>
+              <th>Wall Time (s)</th>
+              <th>Avg Latency (ms)</th>
+              <th>Throughput (req/s)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${summary.map(row => `
+              <tr>
+                <td>${row.endpoint}</td>
+                <td>${row.groups}</td>
+                <td>${row.totalRequests}</td>
+                <td>${row.successCount}</td>
+                <td>${row.failureCount}</td>
+                <td>${row.successRate}</td>
+                <td>${row.wallTime}</td>
+                <td>${row.avgLatency}</td>
+                <td>${row.throughput}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        `;
+        document.body.appendChild(table);
+      });
   </script>
 </body>
 </html>

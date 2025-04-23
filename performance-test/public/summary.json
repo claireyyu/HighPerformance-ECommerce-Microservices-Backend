@@ -1,0 +1,101 @@
+[
+  {
+    "endpoint": "sync",
+    "groups": 2,
+    "totalRequests": 1000,
+    "successCount": 1000,
+    "failureCount": 0,
+    "successRate": "100.00%",
+    "wallTime": "0.53",
+    "avgLatency": 50,
+    "throughput": 1883.21
+  },
+  {
+    "endpoint": "sync",
+    "groups": 4,
+    "totalRequests": 2000,
+    "successCount": 1211,
+    "failureCount": 789,
+    "successRate": "60.55%",
+    "wallTime": "0.90",
+    "avgLatency": 100.7,
+    "throughput": 1344.38
+  },
+  {
+    "endpoint": "sync",
+    "groups": 6,
+    "totalRequests": 3000,
+    "successCount": 1372,
+    "failureCount": 1628,
+    "successRate": "45.73%",
+    "wallTime": "1.09",
+    "avgLatency": 121.16,
+    "throughput": 1264.25
+  },
+  {
+    "endpoint": "kafka",
+    "groups": 2,
+    "totalRequests": 1000,
+    "successCount": 1000,
+    "failureCount": 0,
+    "successRate": "100.00%",
+    "wallTime": "0.81",
+    "avgLatency": 80.22,
+    "throughput": 1235.22
+  },
+  {
+    "endpoint": "kafka",
+    "groups": 4,
+    "totalRequests": 2000,
+    "successCount": 2000,
+    "failureCount": 0,
+    "successRate": "100.00%",
+    "wallTime": "0.95",
+    "avgLatency": 88.68,
+    "throughput": 2106.28
+  },
+  {
+    "endpoint": "kafka",
+    "groups": 6,
+    "totalRequests": 3000,
+    "successCount": 3000,
+    "failureCount": 0,
+    "successRate": "100.00%",
+    "wallTime": "1.19",
+    "avgLatency": 106.17,
+    "throughput": 2529.27
+  },
+  {
+    "endpoint": "rabbitmq",
+    "groups": 2,
+    "totalRequests": 1000,
+    "successCount": 1000,
+    "failureCount": 0,
+    "successRate": "100.00%",
+    "wallTime": "0.69",
+    "avgLatency": 64.23,
+    "throughput": 1459.7
+  },
+  {
+    "endpoint": "rabbitmq",
+    "groups": 4,
+    "totalRequests": 2000,
+    "successCount": 2000,
+    "failureCount": 0,
+    "successRate": "100.00%",
+    "wallTime": "1.09",
+    "avgLatency": 104.99,
+    "throughput": 1836.52
+  },
+  {
+    "endpoint": "rabbitmq",
+    "groups": 6,
+    "totalRequests": 3000,
+    "successCount": 3000,
+    "failureCount": 0,
+    "successRate": "100.00%",
+    "wallTime": "1.79",
+    "avgLatency": 171.51,
+    "throughput": 1672.54
+  }
+]
