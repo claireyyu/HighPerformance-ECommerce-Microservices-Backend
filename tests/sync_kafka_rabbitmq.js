@@ -36,7 +36,7 @@ export const options = {
     sync_group1: {
       executor: 'constant-vus',
       vus: 10,
-      duration: '30s',
+      duration: '10s',
       exec: 'syncTest',
       startTime: '0s',
       tags: { endpoint: 'sync', group: '1' }
@@ -44,15 +44,15 @@ export const options = {
     kafka_group1: {
       executor: 'constant-vus',
       vus: 10,
-      duration: '30s',
+      duration: '10s',
       exec: 'kafkaTest',
-      startTime: '30s',
+      startTime: '10s',
       tags: { endpoint: 'kafka', group: '1' }
     },
     rabbitmq_group1: {
       executor: 'constant-vus',
       vus: 10,
-      duration: '30s',
+      duration: '10s',
       exec: 'rabbitmqTest',
       startTime: '1m',
       tags: { endpoint: 'rabbitmq', group: '1' }
@@ -62,15 +62,15 @@ export const options = {
     sync_group2: {
       executor: 'constant-vus',
       vus: 20,
-      duration: '30s',
+      duration: '10s',
       exec: 'syncTest',
-      startTime: '1m30s',
+      startTime: '1m10s',
       tags: { endpoint: 'sync', group: '2' }
     },
     kafka_group2: {
       executor: 'constant-vus',
       vus: 20,
-      duration: '30s',
+      duration: '10s',
       exec: 'kafkaTest',
       startTime: '2m',
       tags: { endpoint: 'kafka', group: '2' }
@@ -78,9 +78,9 @@ export const options = {
     rabbitmq_group2: {
       executor: 'constant-vus',
       vus: 20,
-      duration: '30s',
+      duration: '10s',
       exec: 'rabbitmqTest',
-      startTime: '2m30s',
+      startTime: '2m10s',
       tags: { endpoint: 'rabbitmq', group: '2' }
     },
 
@@ -88,7 +88,7 @@ export const options = {
     sync_group3: {
       executor: 'constant-vus',
       vus: 30,
-      duration: '30s',
+      duration: '10s',
       exec: 'syncTest',
       startTime: '3m',
       tags: { endpoint: 'sync', group: '3' }
@@ -96,15 +96,15 @@ export const options = {
     kafka_group3: {
       executor: 'constant-vus',
       vus: 30,
-      duration: '30s',
+      duration: '10s',
       exec: 'kafkaTest',
-      startTime: '3m30s',
+      startTime: '3m10s',
       tags: { endpoint: 'kafka', group: '3' }
     },
     rabbitmq_group3: {
       executor: 'constant-vus',
       vus: 30,
-      duration: '30s',
+      duration: '10s',
       exec: 'rabbitmqTest',
       startTime: '4m',
       tags: { endpoint: 'rabbitmq', group: '3' }
