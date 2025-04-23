@@ -21,7 +21,7 @@ const rabbitmqThroughput = new Counter('rabbitmq_throughput');
 let testSummary = {};
 
 // Configuration
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:8081';
+const BASE_URL = __ENV.BASE_URL || 'http://52.12.143.55:8081';
 
 const endpoints = {
   sync: `${BASE_URL}/orders`,
