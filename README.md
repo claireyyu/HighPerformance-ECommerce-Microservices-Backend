@@ -1,86 +1,45 @@
-# E-Commerce Microservices Backend
+# High Performance E-Commerce Microservices
 
-This is a high-performance e-commerce microservices backend system that consists of two main services: Product Service and Order Service.
+## Quick Start
 
-## Architecture
+1. Start services:
+```bash
+docker compose up -d --scale order=3
+```
 
-The system consists of the following components:
+2. Run performance test:
+```bash
+export BASE_URL=http://<IP-Addr>:8081 && node test.js
+```
 
-- **Product Service** (Port 8080)
-  - Manages product information
-  - Exposes REST API endpoints for product operations
-  - Uses MySQL for data persistence
-  - Publishes product events to Kafka
+3. Clean up data:
+```bash
+# Clear MySQL orders
+docker exec -i highperformance-ecommerce-microservices-backend-mysql-1 \
+  mysql -uroot -ppassword ecommerce -e "TRUNCATE TABLE orders;"
 
-- **Order Service** (Port 8081)
-  - Manages order information
-  - Exposes REST API endpoints for order operations
-  - Uses MySQL for data persistence
-  - Supports both synchronous and asynchronous order creation
-  - Uses Kafka and RabbitMQ for asynchronous order processing
+# Clear RabbitMQ queue
+curl -u guest:guest -X DELETE http://localhost:15672/api/queues/%2F/orders/contents
 
-- **MySQL** (Port 3306)
-  - Primary database for both services
-  - Stores product and order information
+# Reset Kafka topic
+docker exec -it highperformance-ecommerce-microservices-backend-kafka-1 kafka-topics \
+  --bootstrap-server localhost:9092 --delete --topic orders
+docker exec -it highperformance-ecommerce-microservices-backend-kafka-1 kafka-topics \
+  --bootstrap-server localhost:9092 --create --topic orders --partitions 3 --replication-factor 1
+```
 
-- **Kafka** (Port 9092)
-  - Message broker for asynchronous event processing
-  - Used for product and order events
+## Queue Comparison
 
-- **RabbitMQ** (Port 5672)
-  - Alternative message broker for asynchronous order processing
-  - Management interface available at port 15672
-
-## API Endpoints
-
-### Product Service (http://localhost:8080)
-
-- `GET /products` - Get all products
-- `POST /products` - Create a new product
-  ```json
-  {
-    "name": "Product Name",
-    "description": "Product Description",
-    "price": 99.99
-  }
-  ```
-
-### Order Service (http://localhost:8081)
-
-- `GET /orders` - Get all orders
-- `POST /orders/sync` - Create a new order synchronously
-  ```json
-  {
-    "user_id": 1,
-    "product_id": 1,
-    "quantity": 2
-  }
-  ```
-- `POST /orders/async/kafka` - Create a new order asynchronously using Kafka
-- `POST /orders/async/rabbitmq` - Create a new order asynchronously using RabbitMQ
-
-## Getting Started
-
-1. Start the services:
-   ```bash
-   docker compose up -d
-   ```
-
-2. Initialize the database:
-   ```bash
-   cd db && ./init.sh
-   ```
-
-3. The services will be available at:
-   - Product Service: http://localhost:8080
-   - Order Service: http://localhost:8081
-   - RabbitMQ Management: http://localhost:15672
-   - Kafka: localhost:9092
-   - MySQL: localhost:3306
-
-## Development
-
-- The project uses Go 1.22
-- Dependencies are managed using Go modules
-- Configuration is managed through environment variables and config.yaml
-- Docker and Docker Compose are used for containerization and orchestration 
+| Feature | Kafka | RabbitMQ |
+|---------|-------|----------|
+| Message Persistence | Disk | Memory + Disk |
+| Message Ordering | Per-partition | Per-queue |
+| Message Routing | Topic-based | Exchange-based |
+| Consumer Groups | Yes | No |
+| Message Acknowledgment | Automatic | Manual/Automatic |
+| Message TTL | Yes | Yes |
+| Message Size | 1MB default | No limit |
+| Throughput | High | Medium |
+| Latency | Low | Very Low |
+| Scalability | Horizontal | Vertical |
+| Use Case | Stream processing | Task queues | 
