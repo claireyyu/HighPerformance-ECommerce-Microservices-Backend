@@ -182,13 +182,14 @@ func StartOrderService() error {
 	go queues.StartGroupConsumer(
 		[]string{kafkaBrokers},
 		kafkaTopic,
-		func(msg string) {
+		func(msg string) error {
 			consumeAndInsert(msg)
+			return nil
 		},
 	)
 
 	go func() {
-		err := rabbit.ConsumeWithPool("orders", 50, func(msg string) error {
+		err := rabbit.ConsumeWithPool("orders", 25, func(msg string) error {
 			log.Printf("🔧 Handling: %s", msg)
 
 			var payload struct {

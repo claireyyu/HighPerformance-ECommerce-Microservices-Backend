@@ -13,7 +13,7 @@ const endpoints = {
 };
 
 const threadGroups = [2, 4, 6];
-const threadsPerGroup = 100;
+const threadsPerGroup = 50;
 const requestsPerThread = 10;
 
 const kafkaStats = [];

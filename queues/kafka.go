@@ -2,6 +2,7 @@ package queues
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -20,12 +21,15 @@ func NewKafkaProducer(brokers string) (*KafkaProducer, error) {
 	config.Producer.Retry.Max = 5
 	config.Producer.Idempotent = true
 
+	// 分区策略配置
+	config.Producer.Partitioner = sarama.NewHashPartitioner
+	config.Producer.Return.Successes = true
+
 	// 🚀 批处理配置
 	config.Producer.Flush.Messages = 500
 	config.Producer.Flush.Frequency = 50 * time.Millisecond
 	config.Producer.Flush.MaxMessages = 500
 
-	config.Producer.Return.Successes = true
 	config.Producer.Compression = sarama.CompressionSnappy
 
 	producer, err := sarama.NewSyncProducer(strings.Split(brokers, ","), config)
@@ -37,8 +41,18 @@ func NewKafkaProducer(brokers string) (*KafkaProducer, error) {
 }
 
 func (kp *KafkaProducer) PublishToKafka(topic, message string) error {
+	// 使用用户ID作为分区key，确保同一用户的订单进入同一分区
+	var key string
+	var order struct {
+		UserID int `json:"user_id"`
+	}
+	if err := json.Unmarshal([]byte(message), &order); err == nil {
+		key = fmt.Sprintf("%d", order.UserID)
+	}
+
 	msg := &sarama.ProducerMessage{
 		Topic: topic,
+		Key:   sarama.StringEncoder(key),
 		Value: sarama.StringEncoder(message),
 	}
 	_, _, err := kp.producer.SendMessage(msg)
@@ -52,7 +66,7 @@ func (kp *KafkaProducer) Close() error {
 // ----- ✅ Kafka Consumer Group with Goroutine Pool -----
 
 type kafkaHandler struct {
-	handler func(string)
+	handler func(string) error
 	pool    chan struct{}
 }
 
@@ -64,7 +78,9 @@ func (h *kafkaHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim s
 		h.pool <- struct{}{} // block if pool is full
 		go func(m *sarama.ConsumerMessage) {
 			defer func() { <-h.pool }()
-			h.handler(string(m.Value))
+			if err := h.handler(string(m.Value)); err != nil {
+				log.Printf("❌ Handler error: %v", err)
+			}
 			session.MarkMessage(m, "")
 		}(msg)
 	}
@@ -72,14 +88,21 @@ func (h *kafkaHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim s
 }
 
 // StartGroupConsumer creates a consumer group with limited concurrency
-func StartGroupConsumer(brokers []string, topic string, handler func(string)) {
+func StartGroupConsumer(brokers []string, topic string, handler func(string) error) {
 	groupID := "ecommerce-group"
-	concurrency := 10
 
 	config := sarama.NewConfig()
 	config.Version = sarama.V2_1_0_0
-	config.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategyRoundRobin
+
+	// 消费者组再平衡策略：粘性分区分配
+	config.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategySticky
+	config.Consumer.Group.Rebalance.Timeout = 60 * time.Second
 	config.Consumer.Offsets.Initial = sarama.OffsetNewest
+
+	// 优化的Fetch配置
+	config.Consumer.Fetch.Min = 1
+	config.Consumer.Fetch.Default = 1024 * 1024 // 1MB
+	config.Consumer.MaxWaitTime = 100 * time.Millisecond
 
 	consumerGroup, err := sarama.NewConsumerGroup(brokers, groupID, config)
 	if err != nil {
@@ -89,14 +112,14 @@ func StartGroupConsumer(brokers []string, topic string, handler func(string)) {
 	ctx := context.Background()
 	h := &kafkaHandler{
 		handler: handler,
-		pool:    make(chan struct{}, concurrency),
+		pool:    make(chan struct{}, 1000),
 	}
 
 	go func() {
 		for {
 			if err := consumerGroup.Consume(ctx, []string{topic}, h); err != nil {
 				log.Printf("❌ Error from consumer group: %v", err)
-				time.Sleep(2 * time.Second) // retry delay
+				time.Sleep(2 * time.Second)
 			}
 		}
 	}()
