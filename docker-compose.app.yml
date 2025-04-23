@@ -19,6 +19,12 @@ services:
       - PRODUCT_DB_NAME=product_db
       - KAFKA_BROKERS=35.92.9.117:9092
       - KAFKA_PRODUCT_TOPIC=product-events
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   order-service:
     build:
@@ -42,6 +48,12 @@ services:
     depends_on:
       product-service:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   order-consumer:
     build:
@@ -60,7 +72,7 @@ services:
       - RABBITMQ_QUEUE=orders
     depends_on:
       order-service:
-        condition: service_started
+        condition: service_healthy
 
   api-gateway:
     build:
