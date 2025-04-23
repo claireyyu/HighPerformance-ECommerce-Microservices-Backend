@@ -35,24 +35,24 @@ export const options = {
     // Group 1: 2 thread groups (100 VUs)
     sync_group1: {
       executor: 'constant-vus',
-      vus: 10,
-      duration: '10s',
+      vus: 100,
+      duration: '30s',
       exec: 'syncTest',
       startTime: '0s',
       tags: { endpoint: 'sync', group: '1' }
     },
     kafka_group1: {
       executor: 'constant-vus',
-      vus: 10,
-      duration: '10s',
+      vus: 100,
+      duration: '30s',
       exec: 'kafkaTest',
-      startTime: '10s',
+      startTime: '30s',
       tags: { endpoint: 'kafka', group: '1' }
     },
     rabbitmq_group1: {
       executor: 'constant-vus',
-      vus: 10,
-      duration: '10s',
+      vus: 100,
+      duration: '30s',
       exec: 'rabbitmqTest',
       startTime: '1m',
       tags: { endpoint: 'rabbitmq', group: '1' }
@@ -61,50 +61,50 @@ export const options = {
     // Group 2: 4 thread groups (200 VUs)
     sync_group2: {
       executor: 'constant-vus',
-      vus: 20,
-      duration: '10s',
+      vus: 200,
+      duration: '30s',
       exec: 'syncTest',
-      startTime: '1m10s',
+      startTime: '1m30s',
       tags: { endpoint: 'sync', group: '2' }
     },
     kafka_group2: {
       executor: 'constant-vus',
-      vus: 20,
-      duration: '10s',
+      vus: 200,
+      duration: '30s',
       exec: 'kafkaTest',
       startTime: '2m',
       tags: { endpoint: 'kafka', group: '2' }
     },
     rabbitmq_group2: {
       executor: 'constant-vus',
-      vus: 20,
-      duration: '10s',
+      vus: 200,
+      duration: '30s',
       exec: 'rabbitmqTest',
-      startTime: '2m10s',
+      startTime: '2m30s',
       tags: { endpoint: 'rabbitmq', group: '2' }
     },
 
     // Group 3: 6 thread groups (300 VUs)
     sync_group3: {
       executor: 'constant-vus',
-      vus: 30,
-      duration: '10s',
+      vus: 300,
+      duration: '30s',
       exec: 'syncTest',
       startTime: '3m',
       tags: { endpoint: 'sync', group: '3' }
     },
     kafka_group3: {
       executor: 'constant-vus',
-      vus: 30,
-      duration: '10s',
+      vus: 300,
+      duration: '30s',
       exec: 'kafkaTest',
-      startTime: '3m10s',
+      startTime: '3m30s',
       tags: { endpoint: 'kafka', group: '3' }
     },
     rabbitmq_group3: {
       executor: 'constant-vus',
-      vus: 30,
-      duration: '10s',
+      vus: 300,
+      duration: '30s',
       exec: 'rabbitmqTest',
       startTime: '4m',
       tags: { endpoint: 'rabbitmq', group: '3' }
@@ -114,7 +114,7 @@ export const options = {
     'sync_duration': ['p(95)<500'],
     'kafka_duration': ['p(95)<200'],
     'rabbitmq_duration': ['p(95)<200'],
-    'sync_errors': ['rate<0.9'],
+    'sync_errors': ['rate<0.05'],
     'kafka_errors': ['rate<0.05'],
     'rabbitmq_errors': ['rate<0.05'],
   }
