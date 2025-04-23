@@ -147,10 +147,19 @@ export function setup() {
 
 // Function to generate random payload
 function generatePayload() {
+  const quantity = Math.floor(Math.random() * 5) + 1;
+  const price = 49.99;
   return {
     user_id: Math.floor(Math.random() * 1000),
-    product_id: 1,
-    quantity: 1
+    status: "pending",
+    total_amount: quantity * price,
+    items: [
+      {
+        product_id: 1,
+        quantity: quantity,
+        price: price
+      }
+    ]
   };
 }
 
