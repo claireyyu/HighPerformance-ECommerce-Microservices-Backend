@@ -32,91 +32,86 @@ const endpoints = {
 // Test configuration to mimic the original test with thread groups
 export const options = {
   scenarios: {
-    // Group 1: 2 thread groups (100 VUs)
     sync_group1: {
-      executor: 'constant-vus',
+      executor: 'per-vu-iterations',
       vus: 100,
-      duration: '30s',
+      iterations: 10,
       exec: 'syncTest',
       startTime: '0s',
       tags: { endpoint: 'sync', group: '1' }
     },
     kafka_group1: {
-      executor: 'constant-vus',
+      executor: 'per-vu-iterations',
       vus: 100,
-      duration: '30s',
+      iterations: 10,
       exec: 'kafkaTest',
-      startTime: '30s',
+      startTime: '1m',
       tags: { endpoint: 'kafka', group: '1' }
     },
     rabbitmq_group1: {
-      executor: 'constant-vus',
+      executor: 'per-vu-iterations',
       vus: 100,
-      duration: '30s',
+      iterations: 10,
       exec: 'rabbitmqTest',
-      startTime: '1m',
+      startTime: '2m',
       tags: { endpoint: 'rabbitmq', group: '1' }
     },
-
-    // Group 2: 4 thread groups (200 VUs)
     sync_group2: {
-      executor: 'constant-vus',
+      executor: 'per-vu-iterations',
       vus: 200,
-      duration: '30s',
+      iterations: 10,
       exec: 'syncTest',
-      startTime: '1m30s',
+      startTime: '3m',
       tags: { endpoint: 'sync', group: '2' }
     },
     kafka_group2: {
-      executor: 'constant-vus',
+      executor: 'per-vu-iterations',
       vus: 200,
-      duration: '30s',
+      iterations: 10,
       exec: 'kafkaTest',
-      startTime: '2m',
+      startTime: '4m',
       tags: { endpoint: 'kafka', group: '2' }
     },
     rabbitmq_group2: {
-      executor: 'constant-vus',
+      executor: 'per-vu-iterations',
       vus: 200,
-      duration: '30s',
+      iterations: 10,
       exec: 'rabbitmqTest',
-      startTime: '2m30s',
+      startTime: '5m',
       tags: { endpoint: 'rabbitmq', group: '2' }
     },
-
-    // Group 3: 6 thread groups (300 VUs)
     sync_group3: {
-      executor: 'constant-vus',
+      executor: 'per-vu-iterations',
       vus: 300,
-      duration: '30s',
+      iterations: 10,
       exec: 'syncTest',
-      startTime: '3m',
+      startTime: '6m',
       tags: { endpoint: 'sync', group: '3' }
     },
     kafka_group3: {
-      executor: 'constant-vus',
+      executor: 'per-vu-iterations',
       vus: 300,
-      duration: '30s',
+      iterations: 10,
       exec: 'kafkaTest',
-      startTime: '3m30s',
+      startTime: '7m',
       tags: { endpoint: 'kafka', group: '3' }
     },
     rabbitmq_group3: {
-      executor: 'constant-vus',
+      executor: 'per-vu-iterations',
       vus: 300,
-      duration: '30s',
+      iterations: 10,
       exec: 'rabbitmqTest',
-      startTime: '4m',
+      startTime: '8m',
       tags: { endpoint: 'rabbitmq', group: '3' }
     },
   },
   thresholds: {
-    'sync_duration': ['p(95)<500'],
-    'kafka_duration': ['p(95)<200'],
-    'rabbitmq_duration': ['p(95)<200'],
     'sync_errors': ['rate<0.05'],
     'kafka_errors': ['rate<0.05'],
     'rabbitmq_errors': ['rate<0.05'],
+    'sync_duration': ['p(95)<500'],
+    'kafka_duration': ['p(95)<200'],
+    'rabbitmq_duration': ['p(95)<200']
   }
 };
 
