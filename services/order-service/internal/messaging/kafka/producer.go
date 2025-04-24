@@ -162,11 +162,10 @@ func NewKafkaProducer(cfg config.KafkaConfig) *KafkaProducer {
 	}
 }
 
-func (p *KafkaProducer) ProduceOrderCreated(order *models.Order) {
+func (p *KafkaProducer) ProduceOrderCreated(order *models.Order) error {
 	msgBytes, err := json.Marshal(order)
 	if err != nil {
-		log.Printf("❌ JSON marshal error: %v", err)
-		return
+		return fmt.Errorf("JSON marshal error: %w", err)
 	}
 
 	msg := &sarama.ProducerMessage{
@@ -175,5 +174,10 @@ func (p *KafkaProducer) ProduceOrderCreated(order *models.Order) {
 		Value: sarama.ByteEncoder(msgBytes),
 	}
 
-	p.producer.Input() <- msg
+	select {
+	case p.producer.Input() <- msg:
+		return nil
+	default:
+		return fmt.Errorf("failed to send message: channel full or closed")
+	}
 }
