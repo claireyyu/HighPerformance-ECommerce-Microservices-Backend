@@ -44,7 +44,7 @@
 
   <script>
     Promise.all([
-      fetch('/results.json').then(res => res.json()),
+      fetch('/summary.json').then(res => res.json()),
       fetch('/queues-rabbitmq.json').then(res => res.json()),
       fetch('/queues-kafka.json').then(res => res.json()),
       fetch('/kafka-stats.json').then(res => res.json()),
