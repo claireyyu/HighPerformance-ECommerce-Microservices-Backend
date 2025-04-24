@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"os"
+	"os/signal"
 
 	"github.com/IBM/sarama"
 	"github.com/ecommerce-platform/order-service/internal/config"
@@ -11,38 +13,68 @@ import (
 	"github.com/ecommerce-platform/order-service/internal/repository"
 )
 
+type OrderConsumer struct {
+	repo repository.OrderRepository
+}
+
+func (consumer *OrderConsumer) Setup(_ sarama.ConsumerGroupSession) error   { return nil }
+func (consumer *OrderConsumer) Cleanup(_ sarama.ConsumerGroupSession) error { return nil }
+
+func (consumer *OrderConsumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	for msg := range claim.Messages() {
+		var order models.Order
+		if err := json.Unmarshal(msg.Value, &order); err != nil {
+			log.Printf("❌ Invalid Kafka message: %v", err)
+			continue
+		}
+
+		err := consumer.repo.Create(context.Background(), &order)
+		if err != nil {
+			log.Printf("❌ Failed to insert order from Kafka: %v", err)
+		} else {
+			log.Printf("✅ Order inserted from Kafka: ID=%d", order.ID)
+		}
+
+		session.MarkMessage(msg, "") // Acknowledge message
+	}
+	return nil
+}
+
 func StartKafkaConsumer(cfg config.KafkaConfig, orderRepo repository.OrderRepository) {
 	config := sarama.NewConfig()
-	config.Consumer.Return.Errors = true
+	config.Version = sarama.V2_1_0_0
+	config.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategyRange
+	config.Consumer.Offsets.Initial = sarama.OffsetNewest
 
-	client, err := sarama.NewConsumer(cfg.Brokers, config)
+	group, err := sarama.NewConsumerGroup(cfg.Brokers, "order-consumer-group", config)
 	if err != nil {
-		log.Fatalf("Failed to start Kafka consumer: %v", err)
+		log.Fatalf("❌ Failed to create Kafka consumer group: %v", err)
 	}
 
-	partitionConsumer, err := client.ConsumePartition(cfg.Topic, 0, sarama.OffsetNewest)
-	if err != nil {
-		log.Fatalf("Failed to consume Kafka partition: %v", err)
-	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	log.Println("✅ Kafka consumer running...")
+	orderConsumer := &OrderConsumer{repo: orderRepo}
 
+	// Graceful shutdown on Ctrl+C
 	go func() {
-		for msg := range partitionConsumer.Messages() {
-			var order models.Order
-			if err := json.Unmarshal(msg.Value, &order); err != nil {
-				log.Printf("Invalid Kafka message: %v", err)
-				continue
-			}
-
-			err := orderRepo.Create(context.Background(), &order)
-			if err != nil {
-				log.Printf("❌ Failed to insert order from Kafka: %v", err)
-			} else {
-				log.Printf("✅ Order inserted from Kafka: ID=%d", order.ID)
-			}
-		}
+		sigchan := make(chan os.Signal, 1)
+		signal.Notify(sigchan, os.Interrupt)
+		<-sigchan
+		cancel()
 	}()
+
+	log.Println("✅ Kafka consumer group is running...")
+
+	for {
+		if err := group.Consume(ctx, []string{cfg.Topic}, orderConsumer); err != nil {
+			log.Fatalf("❌ Error consuming messages: %v", err)
+		}
+		if ctx.Err() != nil {
+			log.Println("🛑 Kafka consumer shutting down")
+			return
+		}
+	}
 }
 
 // package kafka
