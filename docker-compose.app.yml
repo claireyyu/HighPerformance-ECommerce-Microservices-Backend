@@ -17,7 +17,7 @@ services:
       - PRODUCT_DB_USER=product_user
       - PRODUCT_DB_PASSWORD=product_password
       - PRODUCT_DB_NAME=product_db
-      - KAFKA_BROKERS=35.90.217.46:9092
+      - KAFKA_BROKERS=34.214.244.84:9092
       - KAFKA_PRODUCT_TOPIC=product-events
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
@@ -40,10 +40,10 @@ services:
       - ORDER_DB_USER=order_user
       - ORDER_DB_PASSWORD=order_password
       - ORDER_DB_NAME=order_db
-      - KAFKA_BROKERS=35.90.217.46:9092
+      - KAFKA_BROKERS=34.214.244.84:9092
       - KAFKA_ORDER_TOPIC=order-events
       - PRODUCT_SERVICE_URL=http://product-service:8081
-      - RABBITMQ_URL=amqp://guest:guest@35.90.217.46:5672/
+      - RABBITMQ_URL=amqp://guest:guest@34.214.244.84:5672/
       - RABBITMQ_QUEUE=orders
     # depends_on:
     #   product-service:
@@ -66,9 +66,9 @@ services:
       - ORDER_DB_USER=order_user
       - ORDER_DB_PASSWORD=order_password
       - ORDER_DB_NAME=order_db
-      - KAFKA_BROKERS=35.90.217.46:9092
+      - KAFKA_BROKERS=34.214.244.84:9092
       - KAFKA_ORDER_TOPIC=order-events
-      - RABBITMQ_URL=amqp://guest:guest@35.90.217.46:5672/
+      - RABBITMQ_URL=amqp://guest:guest@34.214.244.84:5672/
       - RABBITMQ_QUEUE=orders
     # depends_on:
     #   order-service:
